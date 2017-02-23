@@ -58,7 +58,7 @@ Please note that Green UML is effectively a collection of plug-ins (see [the str
 - Additional functionality
 
 ## Bugs
-Please report bugs to [GreenUML/issues](https://github.com/ValdisVitolins/GreenUML/issues) on GitHub. 
+Please report bugs to [GreenUML/issues](https://github.com/valdisvi/GreenUML/issues) on GitHub. 
 Please note that we do not guarantee bug fixes or updates in the future.
 
 ## License information
