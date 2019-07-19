@@ -1,5 +1,5 @@
 
-#Green UML release 4.6.0
+### Green UML release 4.6.0
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Users guide and additional information](#users-guide-and-additional-information)
