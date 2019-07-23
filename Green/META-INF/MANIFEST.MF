@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Green Plug-in
 Bundle-SymbolicName: edu.buffalo.cse.green;singleton:=true
-Bundle-Version: 4.6.0.qualifier
+Bundle-Version: 4.7.0
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
  org.eclipse.core.resources;bundle-version="3.11.0",
@@ -49,5 +49,6 @@ Export-Package: ccvisu,
  edu.buffalo.cse.green.wizards,
  edu.buffalo.cse.green.xml,
  org.eclipse.jdt.internal.ui
-Import-Package: org.eclipse.emf.common.util
+Import-Package: org.apache.batik.ext.awt.image.codec;version="1.6.0",
+ org.eclipse.emf.common.util
 Bundle-ActivationPolicy: lazy

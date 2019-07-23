@@ -32,6 +32,7 @@ public class AssociationRecognizer extends RelationshipRecognizer {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.Assignment)
 	 */
+	@Override
 	public boolean visit(Assignment node) {
 		if (!inConstructor()) return true;
 

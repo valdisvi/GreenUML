@@ -25,6 +25,11 @@ import edu.buffalo.cse.green.editor.model.commands.AutoArrangeCommand;
  *
  */
 public class AutoArrangeAction extends ContextAction {
+	
+	
+	public AutoArrangeAction() {
+		setAccelerator('k');
+	}
 
 	/* (non-Javadoc)
 	 * @see edu.buffalo.cse.green.editor.action.ContextAction#doRun()

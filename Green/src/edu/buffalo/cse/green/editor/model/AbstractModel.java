@@ -425,7 +425,7 @@ public abstract class AbstractModel<C extends AbstractModel, P extends AbstractM
 			model.dispose();
 		}
 		
-		//_listeners = new HashMap<PropertyChange, PropertyListener>();
+		
 	}
 	
 	/**

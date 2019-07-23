@@ -40,6 +40,7 @@ public class DependencyIRecognizer extends RelationshipRecognizer {
 	/**
 	 * Stop the visitor from going inside any initializer block
 	 */
+	@Override
 	public boolean visit(Initializer node) {
 		return false;
 	}
@@ -47,6 +48,7 @@ public class DependencyIRecognizer extends RelationshipRecognizer {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.ClassInstanceCreation)
 	 */
+	@Override
 	public boolean visit(ClassInstanceCreation node) {
 		AbstractList<ASTNode> features = new ArrayList<ASTNode>();
 		

@@ -43,6 +43,7 @@ public class ActivateSelectionToolCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#canExecute()
 	 */
+	@Override
 	public boolean canExecute() {
 		return _command.canExecute();
 	}
@@ -50,6 +51,7 @@ public class ActivateSelectionToolCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#execute()
 	 */
+	@Override
 	public void execute() {
 		_editor.execute(_command);
 		makeSelectionToolActive();
@@ -58,6 +60,7 @@ public class ActivateSelectionToolCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#canUndo()
 	 */
+	@Override
 	public boolean canUndo() {
 		return _command.canUndo();
 	}
@@ -65,6 +68,7 @@ public class ActivateSelectionToolCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#undo()
 	 */
+	@Override
 	public void undo() {
 		_editor.getRootPart().getViewer().getEditDomain().getPaletteViewer()
 				.setActiveTool(_oldActiveTool);
@@ -75,6 +79,7 @@ public class ActivateSelectionToolCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#redo()
 	 */
+	@Override
 	public void redo() {
 		_editor.redo();
 		makeSelectionToolActive();

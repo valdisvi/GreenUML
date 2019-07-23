@@ -114,6 +114,7 @@ public class AssociationRemover extends RelationshipRemover {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.ExpressionStatement)
 	 */
+	@Override
 	public boolean visit(ExpressionStatement node) {
 		if (getMatcher().match(node, getRelationship().getFeatures().get(0))) {
 			_typeInfo = getCurrentTypeInfo();

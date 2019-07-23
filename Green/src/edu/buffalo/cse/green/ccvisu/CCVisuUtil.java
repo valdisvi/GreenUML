@@ -29,10 +29,10 @@ public class CCVisuUtil {
     	try {
 			positionConstructor = Position.class.getDeclaredConstructor(new Class[0]);
 		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
+
 			e.printStackTrace();
 		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
+
 			e.printStackTrace();
 		}
     	positionConstructor.setAccessible(true);

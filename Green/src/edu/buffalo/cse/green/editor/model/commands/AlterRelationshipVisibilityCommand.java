@@ -43,6 +43,7 @@ public class AlterRelationshipVisibilityCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#execute()
 	 */
+	@Override
 	public void execute() throws IllegalArgumentException {
 		RelationshipGroup rGroup = PlugIn.getRelationshipGroup(_partClass);
 
@@ -58,6 +59,7 @@ public class AlterRelationshipVisibilityCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#undo()
 	 */
+	@Override
 	public void undo() {
 		execute();
 	}
@@ -65,6 +67,7 @@ public class AlterRelationshipVisibilityCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#redo()
 	 */
+	@Override
 	public void redo() {
 		execute();
 	}

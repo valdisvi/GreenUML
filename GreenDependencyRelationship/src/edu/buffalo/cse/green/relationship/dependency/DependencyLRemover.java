@@ -48,6 +48,7 @@ public class DependencyLRemover extends RelationshipRemover {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.VariableDeclarationStatement)
 	 */
+	@Override
 	public boolean visit(VariableDeclarationStatement node) {
 		if (getMatcher().match(node, getRelationship().getFeatures().get(0))) {
 			lVDS.add(node);

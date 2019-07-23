@@ -89,6 +89,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.draw2d.BendpointConnectionRouter;
 import org.eclipse.draw2d.ConnectionRouter;
+import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.ManhattanConnectionRouter;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
@@ -138,7 +139,6 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.core.JarPackageFragmentRoot;
 import org.eclipse.jdt.internal.ui.JavaPluginImages;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
@@ -184,6 +184,7 @@ import edu.buffalo.cse.green.PlugIn;
 import edu.buffalo.cse.green.constants.PluginConstants;
 import edu.buffalo.cse.green.editor.action.ContextAction;
 import edu.buffalo.cse.green.editor.action.Submenu;
+import edu.buffalo.cse.green.editor.action.ZoomFitAction;
 import edu.buffalo.cse.green.editor.controller.AbstractPart;
 import edu.buffalo.cse.green.editor.controller.RelationshipPart;
 import edu.buffalo.cse.green.editor.controller.RootPart;
@@ -197,7 +198,6 @@ import edu.buffalo.cse.green.editor.model.commands.CreateBendpointCommand;
 import edu.buffalo.cse.green.editor.save.ISaveFormat;
 import edu.buffalo.cse.green.editor.view.RelationshipFigure;
 import edu.buffalo.cse.green.editor.view.RootFigure;
-import edu.buffalo.cse.green.logging.UmlLog;
 import edu.buffalo.cse.green.relationships.RelationshipCache;
 import edu.buffalo.cse.green.relationships.RelationshipGroup;
 import edu.buffalo.cse.green.relationships.RelationshipRecognizer;
@@ -211,24 +211,23 @@ import edu.buffalo.cse.green.xml.XMLNode;
 
 /**
  * The editor. Displays a UML diagram that represents all the parts of the
- * <code>JavaModel</code> that have been loaded into it. New projects,
- * packages, compilation units, and types can be loaded in. Methods and fields,
- * however, cannot be added in without their parent <code>IType</code>.
+ * <code>JavaModel</code> that have been loaded into it. New projects, packages,
+ * compilation units, and types can be loaded in. Methods and fields, however,
+ * cannot be added in without their parent <code>IType</code>.
  * 
  * @author bcmartin
  * @author hk47
  * @author zgwang
  */
 
-
-public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
-		CommandStackEventListener, ISelectionProvider {
+public class DiagramEditor extends GraphicalEditorWithFlyoutPalette
+		implements CommandStackEventListener, ISelectionProvider {
 	static {
-		_editors = new ArrayList<DiagramEditor>();
+		_editors = new ArrayList<>();
 	}
 
-//	private boolean _ignoreMenuSelection = false;
-	//static Logger log = Logger.getLogger(log4jExample.class.getName());
+	// private boolean _ignoreMenuSelection = false;
+	// static Logger log = Logger.getLogger(log4jExample.class.getName());
 	/**
 	 * Reference string for the context menu in our editor.
 	 */
@@ -275,14 +274,13 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	private Context _context;
 
 	/**
-	 * A list of relationships that have changed and have not yet been
-	 * processed.
+	 * A list of relationships that have changed and have not yet been processed.
 	 */
 	private Set<RelationshipModel> _relationshipChanges;
 
 	/**
-	 * A list of bendpoints that should be added when loading is complete and
-	 * the root part is available.
+	 * A list of bendpoints that should be added when loading is complete and the
+	 * root part is available.
 	 */
 	private List<BendpointInformation> _bendpoints;
 	private CompilationUnitMap _cuMap;
@@ -290,12 +288,11 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	private List<Filter> _filters;
 	private static ConnectionRouter CONNECTION_ROUTER;
 	private static OutlinePage _outlinePage;
-	
+
 	/**
 	 * GEF's "root part" different from green's RootPart
 	 */
 	private ScalableFreeformRootEditPart _gefRootPart;
-
 
 	/**
 	 * Constructs an instance of the editor.
@@ -303,23 +300,23 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	public DiagramEditor() {
 		updateConnectionRouter();
 		_editors.add(this);
-		_bendpoints = new ArrayList<BendpointInformation>();
+		_bendpoints = new ArrayList<>();
 		setEditDomain(new DefaultEditDomain(this));
 		getCommandStack().addCommandStackEventListener(this);
 		getCommandStack().setUndoLimit(100);
 		_root = new RootModel();
 		_cuMap = new CompilationUnitMap();
-		_filters = new ArrayList<Filter>();
-		ACTIVE_EDITOR = this; //Fixes null pointers
+		_filters = new ArrayList<>();
+		ACTIVE_EDITOR = this; // Fixes null pointers
 
-		getPalettePreferences().setPaletteState(FlyoutPaletteComposite.STATE_PINNED_OPEN);	
+		getPalettePreferences().setPaletteState(FlyoutPaletteComposite.STATE_PINNED_OPEN);
 	}
 
 	public Object getAdapter(Class adapter) {
 		if (IContentOutlinePage.class.equals(adapter)) {
 			return OutlinePage.getInstance();
 		}
-		
+
 		return super.getAdapter(adapter);
 	}
 
@@ -340,48 +337,43 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	public static ToolEntry getSelectionTool() {
 		return DiagramPaletteFactory.getSelectionTool();
 	}
-	
+
 	/**
 	 * Creates the editor's context menu.
 	 */
 	private void buildMenu(IMenuManager menuManager) {
-		Map<String, MenuManager> menus =
-			new HashMap<String, MenuManager>();
-		Map<MenuManager, List<ContextAction>> mActions =
-			new HashMap<MenuManager, List<ContextAction>>();
-		
+		Map<String, MenuManager> menus = new HashMap<String, MenuManager>();
+		Map<MenuManager, List<ContextAction>> mActions = new HashMap<MenuManager, List<ContextAction>>();
+
 		MenuManager inv = new MenuManager("inv");
 		inv.setVisible(false);
 		menus.put(Submenu.Invisible.toString(), inv);
-		
+
 		// get all actions that must be added to the menu
 		List<ContextAction> actions = new ArrayList<ContextAction>();
 
 		actions.addAll(PlugIn.getActions());
-		
+
 		// moved to PlugIn, after the xml plugins are initialized
 		// so that accelerator keys work.
-		/*for (Class partClass : PlugIn.getRelationships()) {
-			ContextAction action =
-				new AlterRelationshipVisibilityAction(partClass);
-			actions.add(action);
-			action =
-				new IncrementalExploreSingleAction(partClass);
-			actions.add(action);
-		}*/
-		
+		/*
+		 * for (Class partClass : PlugIn.getRelationships()) { ContextAction action =
+		 * new AlterRelationshipVisibilityAction(partClass); actions.add(action); action
+		 * = new IncrementalExploreSingleAction(partClass); actions.add(action); }
+		 */
+
 		// add the actions to their appropriate submenus
 		List<ContextAction> lastItems = new ArrayList<ContextAction>();
-		
+
 		for (ContextAction action : actions) {
 			// add in menu group if it doesn't exist
 			MenuManager submenu = menus.get(action.getPath());
-			
+
 			// initialize the action
 			action.calculateEnabled();
 			action.setSelectionProvider(this);
 			action.setText(action.getLabel());
-			
+
 			// if the submenu doesn't exist, create it
 			if (submenu == null) {
 				submenu = createMenuGroup(menus, action.getPath());
@@ -391,70 +383,70 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 					lastItems.add(action);
 					continue;
 				}
-				
+
 				List<ContextAction> actionList = mActions.get(submenu);
-				
+
 				if (actionList == null) {
 					actionList = new ArrayList<ContextAction>();
 					mActions.put(submenu, actionList);
 				}
-				
+
 				actionList.add(action);
 			}
 		}
-		
+
 		// sort the menu alphabetically
 		while (mActions.keySet().size() > 0) {
 			String firstAlpha = "zzz";
 			MenuManager addMenu = null;
-			
+
 			for (MenuManager menu : mActions.keySet()) {
 				if (menu.getMenuText().compareTo(firstAlpha) < 0) {
 					firstAlpha = menu.getMenuText();
 					addMenu = menu;
 				}
 			}
-			
+
 			_contextMenu.add(addMenu);
 			List<ContextAction> actionList = mActions.get(addMenu);
 			mActions.remove(addMenu);
-			
+
 			while (actionList.size() > 0) {
 				firstAlpha = "zzz";
 				ContextAction addAction = null;
-				
+
 				for (ContextAction cAction : actionList) {
 					if (cAction.getLabel().compareTo(firstAlpha) < 0) {
 						firstAlpha = cAction.getLabel();
 						addAction = cAction;
 					}
 				}
-				
+
 				addMenu.add(addAction);
 				actionList.remove(addAction);
 			}
 		}
-			
+
 		while (lastItems.size() > 0) {
 			String firstAlpha = "zzz";
 			ContextAction addAction = null;
-			
+
 			for (ContextAction cAction : lastItems) {
 				if (cAction.getLabel().compareTo(firstAlpha) < 0) {
 					firstAlpha = cAction.getLabel();
 					addAction = cAction;
 				}
 			}
-			
+
 			_contextMenu.add(addAction);
 			lastItems.remove(addAction);
 		}
-		
+
 		// add quick fixes, if applicable
 		IJavaElement element = getContext().getElement();
-		
+
 		if (element instanceof IMember) {
-			MemberModel model =	(MemberModel) getRootModel().getModelFromElement(element);
+			MemberModel model = (MemberModel) getRootModel().getModelFromElement(element);
 			model.appendQuickFixActionsToMenu(_contextMenu);
 		}
 	}
@@ -462,19 +454,21 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Creates and returns a menu with the given path.
 	 * 
-	 * @param menus - A map of menu prefixes to their corresponding menus.
-	 * @param path - The path to the desired menu.
+	 * @param menus
+	 *            - A map of menu prefixes to their corresponding menus.
+	 * @param path
+	 *            - The path to the desired menu.
 	 * @return The appropriate menu.
 	 */
-	private MenuManager createMenuGroup(Map<String, MenuManager> menus,
-			Submenu path) {
+	private MenuManager createMenuGroup(Map<String, MenuManager> menus, Submenu path) {
 		StringTokenizer tokens = new StringTokenizer(path.toString(), "/");
-		if (!tokens.hasMoreTokens()) return null;
-		
+		if (!tokens.hasMoreTokens())
+			return null;
+
 		// create the base menu
 		String menuName = tokens.nextToken();
 		MenuManager menu = createMenuGroupHelper(menus, menuName);
-		
+
 		// nest menus using the path
 		while (tokens.hasMoreTokens()) {
 			menuName += "/" + tokens.nextToken();
@@ -482,34 +476,35 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			menu.add(submenu);
 			menu = submenu;
 		}
-		
+
 		return menu;
 	}
 
 	/**
 	 * Creates menus if they don't exist until the desired menu path exists.
 	 * 
-	 * @param menus - The map of menu prefixes to their corresponding menus.
-	 * @param menuName - The name of the menu to create.
+	 * @param menus
+	 *            - The map of menu prefixes to their corresponding menus.
+	 * @param menuName
+	 *            - The name of the menu to create.
 	 * @return The created menu, or the menu if it already existed.
 	 */
-	private MenuManager createMenuGroupHelper(Map<String, MenuManager> menus,
-			String menuName) {
+	private MenuManager createMenuGroupHelper(Map<String, MenuManager> menus, String menuName) {
 		MenuManager menu = menus.get(menuName);
-		
+
 		if (menu == null) {
-			menu = new MenuManager(
-					menuName.substring(menuName.lastIndexOf("/") + 1));
+			menu = new MenuManager(menuName.substring(menuName.lastIndexOf("/") + 1));
 			menus.put(menuName, menu);
 		}
-		
+
 		return menu;
 	}
 
 	/**
 	 * Updates the context menu's contents, hiding inappropriate contents.
 	 * 
-	 * @param menu - The menu to update.
+	 * @param menu
+	 *            - The menu to update.
 	 */
 	private void updateMenuDisplay(IMenuManager menu) {
 		AbstractModel selectedModel = _context.getModel();
@@ -524,29 +519,31 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			}
 		}
 	}
-	
+
 	/**
 	 * Finds the editor that holds the given <code>IJavaProject</code>.
 	 * 
-	 * @param project - The project to find.
+	 * @param project
+	 *            - The project to find.
 	 */
 	public static DiagramEditor findProjectEditor(IJavaProject project) {
 		for (int x = 0; x < _editors.size(); x++) {
-			DiagramEditor editor = (DiagramEditor) _editors.get(x);
+			DiagramEditor editor = _editors.get(x);
 			IJavaProject editorProject = editor.getProject();
-			if (editorProject == null) continue;
-			
-			if (project.getHandleIdentifier().equals(
-					editorProject.getHandleIdentifier())) {
-				return editor; }
+			if (editorProject == null)
+				continue;
+
+			if (project.getHandleIdentifier().equals(editorProject.getHandleIdentifier())) {
+				return editor;
+			}
 		}
 
 		return null;
 	}
 
 	/**
-	 * Returns the project that the current <code>DiagramEditor</code> is
-	 * displaying the contents of.
+	 * Returns the project that the current <code>DiagramEditor</code> is displaying
+	 * the contents of.
 	 * 
 	 * @return The project that's currenly displayed in the editor.
 	 */
@@ -563,24 +560,27 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 		} catch (Throwable t) {
 			// don't care
 		}
-		
+
 		_editors.remove(this);
 		getRootModel().dispose();
-		if (ACTIVE_EDITOR == this) ACTIVE_EDITOR = null;
-		
+		if (ACTIVE_EDITOR == this)
+			ACTIVE_EDITOR = null;
+
 		super.dispose();
 	}
 
 	/**
 	 * Adds a bendpoint to a relationship at the given location.
 	 * 
-	 * @param rModel - The <code>RelationshipsModel</code>.
-	 * @param location - The location of the bendpoint.
+	 * @param rModel
+	 *            - The <code>RelationshipsModel</code>.
+	 * @param location
+	 *            - The location of the bendpoint.
 	 */
 	public void addBendpoint(RelationshipModel rModel, Point location) {
 		_bendpoints.add(new BendpointInformation(rModel, location));
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.ISaveablePart#doSave(org.eclipse.core.runtime.IProgressMonitor)
 	 */
@@ -596,17 +596,17 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	}
 
 	/**
-	 * @see org.eclipse.ui.IEditorPart#init(org.eclipse.ui.IEditorSite, org.eclipse.ui.IEditorInput)
+	 * @see org.eclipse.ui.IEditorPart#init(org.eclipse.ui.IEditorSite,
+	 *      org.eclipse.ui.IEditorInput)
 	 */
-	public void init(IEditorSite iSite, IEditorInput iInput)
-			throws PartInitException {
+	public void init(IEditorSite iSite, IEditorInput iInput) throws PartInitException {
 		super.init(iSite, iInput);
 
-		if (iInput instanceof FileStoreEditorInput){
-			   URI resourceID = ((FileStoreEditorInput)iInput).getURI();
-			   setEditorInput(new GreenEditorInput(new File(resourceID)));
+		if (iInput instanceof FileStoreEditorInput) {
+			URI resourceID = ((FileStoreEditorInput) iInput).getURI();
+			setEditorInput(new GreenEditorInput(new File(resourceID)));
 		}
-		
+
 		setPartName(getEditorInput().getName());
 
 		// set global actions
@@ -617,8 +617,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				// set action handlers (shortcut keys) as appropriate
 				ActionContributionItem aItem = (ActionContributionItem) item;
 				ContextAction action = (ContextAction) aItem.getAction();
-				bars.setGlobalActionHandler(
-						action.getGlobalActionHandler().getId(), action);
+				bars.setGlobalActionHandler(action.getGlobalActionHandler().getId(), action);
 			}
 		}
 
@@ -635,104 +634,106 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 
 		// get the input file to the editor and handle loading from it
 		IPathEditorInput input = (IPathEditorInput) getEditorInput();
-		DiagramEditorFilePolicies.load(this,
-				new File(input.getPath().toOSString()));
-		
+		DiagramEditorFilePolicies.load(this, new File(input.getPath().toOSString()));
+
 		createContextMenu();
-		
+
 		// create bendpoints (saved) on relationship arcs
 		for (BendpointInformation bendpoint : _bendpoints) {
 			BendpointRequest request = bendpoint.getBendpointRequest(this);
-			if (request == null) continue;
-			
-			RelationshipFigure rFigure =
-				(RelationshipFigure) request.getSource().getFigure();
-			
+			if (request == null)
+				continue;
+
+			RelationshipFigure rFigure = (RelationshipFigure) request.getSource().getFigure();
+
 			execute(new CreateBendpointCommand(rFigure, request));
 		}
-		
+
 		// pretend the editor is saved
 		markAsSaved();
-		
-		
-		//This code have been replaced with the addition of the flyout
-		//palette and PaletteStacks
-		//@author zgwang
-//		
-//		getPaletteViewer().addPaletteListener(new PaletteListener() {
-//			/**
-//			 * @see org.eclipse.gef.palette.PaletteListener#activeToolChanged(org.eclipse.gef.ui.palette.PaletteViewer, org.eclipse.gef.palette.ToolEntry)
-//			 */
-//			public void activeToolChanged(final PaletteViewer palette,
-//					final ToolEntry tool) {
-//				if (!PlugIn.isUserMode()) return;
-//				
-//				final List<RelationshipSubtype> subtypes =
-//					PlugIn.getRelationshipSubtypes(tool.getLabel());
-//				
-//				if (subtypes == null) return;
-//				
-//				if (subtypes.size() < 2) return;
-//				
-//				if (_ignoreMenuSelection) {
-//					_ignoreMenuSelection = false;
-//					return;
-//				}
-//				
-//				Menu menu = new Menu(palette.getControl());
-//				
-//				/* If a relationship with more than one subtype exists, we want
-//				 * to display a context menu when the palette tool is clicked so
-//				 * that the user can select which subtype to create.
-//				 */
-//				for (final RelationshipSubtype subtype : subtypes) {
-//					MenuItem item = new MenuItem(menu, 0);
-//					item.setText(subtype.getLabel());
-//					item.addSelectionListener(new SelectionListener() {
-//						/**
-//						 * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org.eclipse.swt.events.SelectionEvent)
-//						 */
-//						public void widgetSelected(SelectionEvent e) {
-//							tool.setToolProperty(
-//									CreationTool.PROPERTY_CREATION_FACTORY,
-//									new SimpleFactory(
-//											subtype.getGroup().getPartClass()));
-//							_ignoreMenuSelection = true;
-//							palette.setActiveTool(tool);
-//						}
-//
-//						/**
-//						 * @see org.eclipse.swt.events.SelectionListener#widgetDefaultSelected(org.eclipse.swt.events.SelectionEvent)
-//						 */
-//						public void widgetDefaultSelected(SelectionEvent e) {}
-//					});
-//				}
-//				
-//				// display the menu
-//				menu.setLocation(getSite().getShell().getDisplay().getCursorLocation());
-//				menu.setVisible(true);
-//			}
-//		});
-		
+
+		// This code have been replaced with the addition of the flyout
+		// palette and PaletteStacks
+		// @author zgwang
+		//
+		// getPaletteViewer().addPaletteListener(new PaletteListener() {
+		// /**
+		// * @see
+		// org.eclipse.gef.palette.PaletteListener#activeToolChanged(org.eclipse.gef.ui.palette.PaletteViewer,
+		// org.eclipse.gef.palette.ToolEntry)
+		// */
+		// public void activeToolChanged(final PaletteViewer palette,
+		// final ToolEntry tool) {
+		// if (!PlugIn.isUserMode()) return;
+		//
+		// final List<RelationshipSubtype> subtypes =
+		// PlugIn.getRelationshipSubtypes(tool.getLabel());
+		//
+		// if (subtypes == null) return;
+		//
+		// if (subtypes.size() < 2) return;
+		//
+		// if (_ignoreMenuSelection) {
+		// _ignoreMenuSelection = false;
+		// return;
+		// }
+		//
+		// Menu menu = new Menu(palette.getControl());
+		//
+		// /* If a relationship with more than one subtype exists, we want
+		// * to display a context menu when the palette tool is clicked so
+		// * that the user can select which subtype to create.
+		// */
+		// for (final RelationshipSubtype subtype : subtypes) {
+		// MenuItem item = new MenuItem(menu, 0);
+		// item.setText(subtype.getLabel());
+		// item.addSelectionListener(new SelectionListener() {
+		// /**
+		// * @see
+		// org.eclipse.swt.events.SelectionListener#widgetSelected(org.eclipse.swt.events.SelectionEvent)
+		// */
+		// public void widgetSelected(SelectionEvent e) {
+		// tool.setToolProperty(
+		// CreationTool.PROPERTY_CREATION_FACTORY,
+		// new SimpleFactory(
+		// subtype.getGroup().getPartClass()));
+		// _ignoreMenuSelection = true;
+		// palette.setActiveTool(tool);
+		// }
+		//
+		// /**
+		// * @see
+		// org.eclipse.swt.events.SelectionListener#widgetDefaultSelected(org.eclipse.swt.events.SelectionEvent)
+		// */
+		// public void widgetDefaultSelected(SelectionEvent e) {}
+		// });
+		// }
+		//
+		// // display the menu
+		// menu.setLocation(getSite().getShell().getDisplay().getCursorLocation());
+		// menu.setVisible(true);
+		// }
+		// });
+
 		// save the editor
 		doSave(null);
-		
+
 		// makes the palette buttons work
-		final PaletteViewer v = getGraphicalViewer().getEditDomain().getPaletteViewer(); 
-		getGraphicalViewer().getEditDomain().getPaletteViewer().addPaletteListener( new PaletteListener() {
-			
-			private ToolEntry _lastEntry = v.getActiveTool( ); 
-			
-			public void activeToolChanged ( PaletteViewer palette,
-					ToolEntry tool ) {
-				if( tool instanceof PaletteButton ) {
-					((PaletteButton)tool).act( );
-					v.setActiveTool( _lastEntry );
-				} else _lastEntry = tool;
+		final PaletteViewer v = getGraphicalViewer().getEditDomain().getPaletteViewer();
+		getGraphicalViewer().getEditDomain().getPaletteViewer().addPaletteListener(new PaletteListener() {
+
+			private ToolEntry _lastEntry = v.getActiveTool();
+
+			public void activeToolChanged(PaletteViewer palette, ToolEntry tool) {
+				if (tool instanceof PaletteButton) {
+					((PaletteButton) tool).act();
+					v.setActiveTool(_lastEntry);
+				} else
+					_lastEntry = tool;
 			}
-			
+
 		});
-		
+
 	}
 
 	/**
@@ -740,8 +741,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	 */
 	public RootPart getRootPart() {
 		// return the graphical viewer, if it exists
-		return getGraphicalViewer() == null ? null
-				: (RootPart) getGraphicalViewer().getContents();
+		return getGraphicalViewer() == null ? null : (RootPart) getGraphicalViewer().getContents();
 	}
 
 	/**
@@ -792,55 +792,49 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 		Menu menu = _contextMenu.createContextMenu(control);
 		control.setMenu(menu);
 	}
-	
+
 	/**
 	 * Gets the ZoomManager for this.
+	 * 
 	 * @return zoom manager
 	 */
-	public ZoomManager getZoomManager() { return _gefRootPart.getZoomManager(); }
-	
+	public ZoomManager getZoomManager() {
+		return _gefRootPart.getZoomManager();
+	}
+
 	/**
 	 * @see org.eclipse.gef.ui.parts.GraphicalEditor#configureGraphicalViewer()
 	 */
 	protected void configureGraphicalViewer() {
 		super.configureGraphicalViewer();
-		ScrollingGraphicalViewer viewer = (ScrollingGraphicalViewer)getGraphicalViewer();
+		ScrollingGraphicalViewer viewer = (ScrollingGraphicalViewer) getGraphicalViewer();
 
 		// Scroll-wheel Zoom
-		getGraphicalViewer().setProperty(MouseWheelHandler.KeyGenerator.getKey(SWT.MOD1), 
-				MouseWheelZoomHandler.SINGLETON);		
-		
+		getGraphicalViewer().setProperty(MouseWheelHandler.KeyGenerator.getKey(SWT.MOD1),
+				MouseWheelZoomHandler.SINGLETON);
+
 		// associate appropriate handlers with the viewer
 		_gefRootPart = new ScalableFreeformRootEditPart();
-		ZoomManager zoom = _gefRootPart.getZoomManager();
-		List<String> zoomLevels = new ArrayList<String>(3);
-		zoomLevels.add(ZoomManager.FIT_ALL);
-		zoomLevels.add(ZoomManager.FIT_WIDTH);
-		zoomLevels.add(ZoomManager.FIT_HEIGHT);
-		zoom.setZoomLevelContributions(zoomLevels);
+		
+		// Check if anything has changed in the editor viewer window
+		checkDirty();
+		
 		IAction zoomIn = new ZoomInAction(_gefRootPart.getZoomManager());
 		IAction zoomOut = new ZoomOutAction(_gefRootPart.getZoomManager());
 		getActionRegistry().registerAction(zoomIn);
 		getActionRegistry().registerAction(zoomOut);
-		
-		//These lines don't seem to do anything and will
-		//remain commented out until an error occurs.
-//		getSite().getKeyBindingService().registerAction(zoomIn);
-//		getSite().getKeyBindingService().registerAction(zoomOut);
-		
+
 		viewer.setRootEditPart(_gefRootPart);
 		viewer.setEditPartFactory(new DiagramPartFactory());
-		viewer.setKeyHandler(new GraphicalViewerKeyHandler(viewer)
-				.setParent(getCommonKeyHandler()));
-		
+		viewer.setKeyHandler(new GraphicalViewerKeyHandler(viewer).setParent(getCommonKeyHandler()));
+
 		ActionRegistry registry = getActionRegistry();
 		List<ContextAction> actions = PlugIn.getActions();
-		
+
 		// register context menu actions
 		for (ContextAction action : actions) {
-			registry.registerAction(action);
 			int accelerator = action.getAccelerator();
-			
+
 			// enabled shortcut keys where appropriate
 			if (accelerator != 0) {
 				addKeyAction((char) accelerator, action);
@@ -851,8 +845,10 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Adds a shortcut key mapping to the editor.
 	 * 
-	 * @param key - The key to map.
-	 * @param action - The action to map the key to.
+	 * @param key
+	 *            - The key to map.
+	 * @param action
+	 *            - The action to map the key to.
 	 */
 	public void addKeyAction(char key, ContextAction action) {
 		_sharedKeyHandler.put(KeyStroke.getPressed(key, key, 0), action);
@@ -862,8 +858,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	 * @see org.eclipse.gef.ui.parts.GraphicalEditorWithPalette#getPaletteRoot()
 	 */
 	protected PaletteRoot getPaletteRoot() {
-		PaletteRoot pRoot = DiagramPaletteFactory.createPaletteRoot( );
-		return pRoot;
+		return DiagramPaletteFactory.createPaletteRoot();
 	}
 
 	/**
@@ -882,84 +877,76 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Creates a new editor using the given selection.
 	 * 
-	 * @param selection - The selection of elements to add to the editor.
+	 * @param selection
+	 *            - The selection of elements to add to the editor.
 	 * @return The editor that was created.
 	 */
-	public static DiagramEditor createEditor(
-			IStructuredSelection selection) throws JavaModelException {
+	public static DiagramEditor createEditor(IStructuredSelection selection) throws JavaModelException {
 
 		for (Object element : selection.toArray()) {
 			if (element instanceof IJavaElement) {
 				return createEditor((IJavaElement) element);
 			}
 		}
-		
+
 		return null;
 	}
 
 	/**
 	 * Opens a blank editor.
 	 * 
-	 * @param element - The element to place the diagram file in.
+	 * @param element
+	 *            - The element to place the diagram file in.
 	 * @return a reference to the opened editor, if successful.
 	 */
-	private static DiagramEditor createEditor(
-			IJavaElement element) throws JavaModelException {
-		IWorkbenchWindow dwindow = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
+	private static DiagramEditor createEditor(IJavaElement element) {
+		IWorkbenchWindow dwindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		IWorkbenchPage workbenchPage = dwindow.getActivePage();
 		IPackageFragment packFrag = null;
 		IPath elementPath;
 
 		// get the project itself, if desired (for creating DIA)
-		if (element.isReadOnly() || PlugIn.getBooleanPreference(
-				P_FORCE_DIA_IN_PROJECT)) {
+		if (element.isReadOnly() || PlugIn.getBooleanPreference(P_FORCE_DIA_IN_PROJECT)) {
 			element = element.getAncestor(IJavaElement.JAVA_PROJECT);
 		}
-		
+
 		if (element instanceof IJavaProject) {
 			IJavaProject project = (IJavaProject) element;
 			IJavaElement[] defaultPackages = JavaProjectUtil.getDefaultSourcePackages(project, false);
-			if (defaultPackages.length>0) {
+			if (defaultPackages.length > 0) {
 				IJavaElement javaElement = defaultPackages[0];
 				if (javaElement instanceof IPackageFragment) {
-					packFrag = (IPackageFragment)javaElement;
+					packFrag = (IPackageFragment) javaElement;
 				} else {
-					packFrag = (IPackageFragment) javaElement.getAncestor(
-							IJavaElement.PACKAGE_FRAGMENT);					
+					packFrag = (IPackageFragment) javaElement.getAncestor(IJavaElement.PACKAGE_FRAGMENT);
 				}
 			}
 		} else if (!(element instanceof IPackageFragment)) {
-			packFrag = (IPackageFragment) element.getAncestor(
-					IJavaElement.PACKAGE_FRAGMENT);
+			packFrag = (IPackageFragment) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT);
 		} else {
 			packFrag = (IPackageFragment) element;
 		}
 
 		// create a path to the diagram file with current extension
-		elementPath = packFrag.getPath().append(
-				packFrag.getJavaProject().getElementName() + "." + PluginConstants.GREEN_EXTENSION);
-		
+		elementPath = packFrag.getPath()
+				.append(packFrag.getJavaProject().getElementName() + "." + PluginConstants.GREEN_EXTENSION);
+
 		try {
-			IFile diaFile = DiagramEditor.getFileNotExist(
-					element.getJavaProject().getProject(), elementPath);
-			DiagramEditor editor = (DiagramEditor) IDE.openEditor(
-					workbenchPage, diaFile, true);
+			IFile diaFile = DiagramEditor.getFileNotExist(element.getJavaProject().getProject(), elementPath);
+			DiagramEditor editor = (DiagramEditor) IDE.openEditor(workbenchPage, diaFile, true);
 			ACTIVE_EDITOR = editor;
 			return editor;
-		} catch (CoreException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (CoreException | IOException e) {
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 
 	// -Selection--------------------------------------------------------------------
 
 	/**
-	 * @see org.eclipse.jface.viewers.ISelectionProvider#addSelectionChangedListener(ISelectionChangedListener listener)
+	 * @see org.eclipse.jface.viewers.ISelectionProvider#addSelectionChangedListener(ISelectionChangedListener
+	 *      listener)
 	 */
 	public void addSelectionChangedListener(ISelectionChangedListener listener) {
 		_selectionChangedListeners.add(listener);
@@ -983,8 +970,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * @see org.eclipse.jface.viewers.ISelectionProvider#removeSelectionChangedListener(org.eclipse.jface.viewers.ISelectionChangedListener)
 	 */
-	public void removeSelectionChangedListener(
-			ISelectionChangedListener listener) {
+	public void removeSelectionChangedListener(ISelectionChangedListener listener) {
 		_selectionChangedListeners.remove(listener);
 	}
 
@@ -992,25 +978,25 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	 * @see org.eclipse.jface.viewers.ISelectionProvider#setSelection(org.eclipse.jface.viewers.ISelection)
 	 */
 	public void setSelection(ISelection selection) {
-		if (!(selection instanceof IStructuredSelection)) return;
-		
+		if (!(selection instanceof IStructuredSelection))
+			return;
+
 		// set the formerly selected part to its original color
 		if (_context != null) {
 			_context.getPart().setInitialBackgroundColor();
 		}
-		
-		
+
 		// set Green's context to the currently selected values
 		IStructuredSelection sSelection = (IStructuredSelection) selection;
 		if (!(sSelection.getFirstElement() instanceof AbstractPart)) {
 			return;
 		}
-		
+
 		_selection = sSelection;
 		_context = new Context(_selection);
-		
+
 		AbstractPart part = _context.getPart();
-		
+
 		// set the selected part to the selection color
 		if ((part != null) && (part.getParent() instanceof AbstractPart)) {
 			part.setSelectedBackgroundColor();
@@ -1018,25 +1004,28 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	}
 
 	/**
-	 * @see org.eclipse.ui.ISelectionListener#selectionChanged(org.eclipse.ui.IWorkbenchPart, org.eclipse.jface.viewers.ISelection)
+	 * @see org.eclipse.ui.ISelectionListener#selectionChanged(org.eclipse.ui.IWorkbenchPart,
+	 *      org.eclipse.jface.viewers.ISelection)
 	 */
 	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
-		if (selection.isEmpty()) { return; }
+		if (selection.isEmpty()) {
+			return;
+		}
 		super.selectionChanged(part, selection);
-		
+
 		if (part instanceof DiagramEditor) {
 			if (_outlinePage != null) {
 				_outlinePage.setSelection(selection);
 			}
 		}
-		
+
 		setSelection(selection);
 	}
 
 	// ------------------------------------------------------------------------------
 	/**
-	 * Singleton: gets the key handler for editors. This method is responsible
-	 * for all of the keyboard shortcuts handled by our editor.
+	 * Singleton: gets the key handler for editors. This method is responsible for
+	 * all of the keyboard shortcuts handled by our editor.
 	 * 
 	 * @return The <code>KeyHandler</code>.
 	 */
@@ -1065,9 +1054,13 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	}
 
 	/**
-	 * Checks to see if there were any changes to the editor
+	 * Checks to see if there were any changes to the editor and adjusts the maximal
+	 * zoom out according to layouts changes
 	 */
 	public void checkDirty() {
+		ZoomFitAction zoomFit = new ZoomFitAction();
+		zoomFit.setNewZoomLevels(zoomFit.calculateZoomLevels());
+
 		firePropertyChange(IEditorPart.PROP_DIRTY);
 	}
 
@@ -1097,18 +1090,17 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public static IFile getFileNotExist(IProject project, IPath path)
-			throws CoreException, IOException {
+	public static IFile getFileNotExist(IProject project, IPath path) throws CoreException, IOException {
 		// create a new path to the file
 		IFile file;
 		String sPath = path.toOSString();
 		int extensionIndex = sPath.lastIndexOf('.');
 		String extension = sPath.substring(extensionIndex);
 		sPath = sPath.substring(0, extensionIndex);
-		
+
 		int x = 1;
 
-		// mutate the path until it is unique 
+		// mutate the path until it is unique
 		do {
 			IPath newPath;
 
@@ -1117,7 +1109,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			} else {
 				newPath = new Path(sPath + "_" + x + extension).removeFirstSegments(1);
 			}
-			
+
 			file = project.getFile(newPath);
 			x++;
 		} while (file.isAccessible());
@@ -1138,12 +1130,11 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	}
 
 	/**
-	 * Returns the file that is currently being edited. This will attempt to see
-	 * if Eclipse knows about the file. If not, the fallback file will be used
-	 * instead.
+	 * Returns the file that is currently being edited. This will attempt to see if
+	 * Eclipse knows about the file. If not, the fallback file will be used instead.
 	 * 
-	 * @return The <code>IFile</code> representing the file that is currently
-	 *         being edited.
+	 * @return The <code>IFile</code> representing the file that is currently being
+	 *         edited.
 	 */
 	public IFile getCurrentFile() {
 		IEditorInput input = getEditorInput();
@@ -1152,19 +1143,20 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			FileEditorInput fInput = (FileEditorInput) input;
 			return fInput.getFile();
 		}
-		
+
 		return null;
 	}
 
 	/**
 	 * Sets the editor's input to the given input.
 	 * 
-	 * @param input - The editor's input.
+	 * @param input
+	 *            - The editor's input.
 	 */
 	public void setEditorInput(IEditorInput input) {
 		setInput(input);
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.part.WorkbenchPart#setPartName(java.lang.String)
 	 */
@@ -1173,9 +1165,10 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	}
 
 	/**
-	 * Saves the given string to the current file 
+	 * Saves the given string to the current file
 	 * 
-	 * @param contents - The text to save
+	 * @param contents
+	 *            - The text to save
 	 * @return true upon success, false otherwise
 	 */
 	public boolean saveFile(String contents) {
@@ -1187,29 +1180,30 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	 */
 	public void synchronizeCurrentFile() {
 		try {
-			if (getCurrentFile() == null) return;
-			
-			getCurrentFile().refreshLocal(IResource.DEPTH_INFINITE, PlugIn
-					.getEmptyProgressMonitor());
+			if (getCurrentFile() == null)
+				return;
+
+			getCurrentFile().refreshLocal(IResource.DEPTH_INFINITE, PlugIn.getEmptyProgressMonitor());
 		} catch (CoreException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Saves the given contents to the given file.
 	 * 
-	 * @param iFile - The file to save to.
-	 * @param contents - The text to save.
+	 * @param iFile
+	 *            - The file to save to.
+	 * @param contents
+	 *            - The text to save.
 	 * @return true upon success, false otherwise.
 	 */
 	public boolean saveFile(IFile iFile, String contents) {
 		File file = null;
-		
+
 		if (iFile != null) {
 			// use the given file
-			file = PlugIn.getWorkspaceRoot().getFile(
-					iFile.getFullPath()).getLocation().toFile();
+			file = PlugIn.getWorkspaceRoot().getFile(iFile.getFullPath()).getLocation().toFile();
 		} else {
 			if (getEditorInput() instanceof GreenEditorInput) {
 				// Green file format
@@ -1217,14 +1211,12 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				file = input.getPath().toFile();
 			} else {
 				// Invalid format
-				GreenException.illegalOperation("Illegal editor input type: " +
-						getEditorInput().getClass());
+				GreenException.illegalOperation("Illegal editor input type: " + getEditorInput().getClass());
 			}
 		}
-		
+
 		// write the contents into the file (perform the save)
-		try {
-			FileWriter fWriter = new FileWriter(file);
+		try (FileWriter fWriter = new FileWriter(file)) {
 			PrintWriter pWriter = new PrintWriter(fWriter);
 			pWriter.println(contents);
 			pWriter.close();
@@ -1256,7 +1248,8 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Refreshes the editor.
 	 * 
-	 * @param forceUpdateRelationships - Forces the updating of relationships.
+	 * @param forceUpdateRelationships
+	 *            - Forces the updating of relationships.
 	 * @author zgwang
 	 */
 	public void refresh(final boolean forceUpdateRelationships) {
@@ -1277,24 +1270,24 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				} catch (CoreException e) {
 					GreenException.critical(e);
 				}
-				
+
 				// refresh relationships
 				refreshRelationships(forceUpdateRelationships);
 				// refresh model
 				getRootModel().refresh();
 				// refresh figures
 				List<DiagramEditor> allEditors = getEditors();
-				for(DiagramEditor editor : allEditors) {
-					((RootFigure)(editor.getRootPart().getFigure())).updateEditor();
+				for (DiagramEditor editor : allEditors) {
+					((RootFigure) (editor.getRootPart().getFigure())).updateEditor();
 				}
 			}
 		});
-		
+
 		if (_outlinePage != null) {
 			_outlinePage.update(this);
 		}
 	}
-	
+
 	/**
 	 * @return true if an undo can be performed, false otherwise
 	 */
@@ -1309,7 +1302,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 		if (!canUndo()) {
 			GreenException.illegalOperation("Undo was unsuccessful");
 		}
-		
+
 		getCommandStack().undo();
 	}
 
@@ -1327,7 +1320,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 		if (!canRedo()) {
 			GreenException.illegalOperation("Redo was unsuccessful");
 		}
-		
+
 		getCommandStack().redo();
 	}
 
@@ -1341,22 +1334,24 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Finds all relationships that have the given element as their source.
 	 * 
-	 * @param element - The element to find relationships for.
+	 * @param element
+	 *            - The element to find relationships for.
 	 */
 	private void findRelationships(IJavaElement element) {
 		long modified;
-		
+
 		// if the element contains errors, quit
 		try {
-			if (!element.exists() || !element.isStructureKnown()) return;
+			if (!element.exists() || !element.isStructureKnown())
+				return;
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		CompilationUnit cu;
 		String id = element.getHandleIdentifier();
-		
+
 		// generate AST if necessary - check modification stamp
 		Long modifiedStore = _cuMap.getModificationStamp(id);
 		IResource resource = element.getResource();
@@ -1365,23 +1360,23 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			if (_cuMap.getCompilationUnit(id) != null) {
 				modifiedStore = new Long(0);
 			}
-			
+
 			modified = 0;
 		} else {
 			modified = resource.getModificationStamp();
 		}
-		
+
 		// if there isn't an up-to-date AST, create one
 		if ((modifiedStore == null) || (modified != modifiedStore)) {
 			ASTParser parser = ASTParser.newParser(AST.JLS8); // XT CHANGE (AST.JLS3)
 			parser.setResolveBindings(true);
-			
+
 			if (element instanceof ICompilationUnit) {
 				parser.setSource((ICompilationUnit) element);
 			} else if (element instanceof IClassFile) {
 				// only search through the class if it has source code attached
 				IClassFile classFile = (IClassFile) element;
-				
+
 				try {
 					if (classFile.getSource() == null) {
 						return;
@@ -1389,49 +1384,47 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				} catch (JavaModelException e) {
 					e.printStackTrace();
 				}
-				
+
 				parser.setSource(classFile);
 			} else {
-				GreenException.illegalOperation("Illegal element type: "
-						+ element.getClass());
+				GreenException.illegalOperation("Illegal element type: " + element.getClass());
 			}
-			
+
 			cu = (CompilationUnit) parser.createAST(null);
 			_cuMap.put(element, cu);
 		} else {
 			cu = _cuMap.getCompilationUnit(id);
 		}
-		
+
 		// run the recognizers
 		for (Class klass : PlugIn.getRelationships()) {
-			RelationshipRecognizer recognizer = PlugIn.getRelationshipGroup(
-					klass).getRecognizer();
-			
+			RelationshipRecognizer recognizer = PlugIn.getRelationshipGroup(klass).getRecognizer();
+
 			// run the recognizer
 			recognizer.run(cu, getRootModel().getRelationshipCache());
 		}
 	}
-	
-	public void forceRefreshRelationships()
-	{
+
+	public void forceRefreshRelationships() {
 		refreshRelationships(true);
 	}
-	
+
 	/**
 	 * Refreshes the relationships in the editor
 	 * 
-	 * @param force - If true, will run the relationship recognizers. If false,
-	 * will run the relationship recognizers only if they are not disabled in
-	 * the <code>PlugIn</code> instance. 
+	 * @param force
+	 *            - If true, will run the relationship recognizers. If false, will
+	 *            run the relationship recognizers only if they are not disabled in
+	 *            the <code>PlugIn</code> instance.
 	 */
 	private void refreshRelationships(boolean force) {
 		List<String> visitedElements = new ArrayList<String>();
 		List<String> outdated = new ArrayList<String>();
-		
+
 		if (!force && !PlugIn.isRecognizersEnabled()) {
 			return;
 		}
-		
+
 		// get a list of all classes and compilation units in the editor
 		List<IJavaElement> elements = new ArrayList<IJavaElement>();
 		elements.addAll(getRootModel().getElementsOfKind(IJavaElement.COMPILATION_UNIT));
@@ -1442,21 +1435,21 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 			findRelationships(element);
 			visitedElements.add(element.getHandleIdentifier());
 		}
-		
-		// remove outdated CompilationUnit objects from the map 
+
+		// remove outdated CompilationUnit objects from the map
 		for (String cu : _cuMap.keySet()) {
 			if (!(visitedElements.contains(cu))) {
 				outdated.add(cu);
 			}
 		}
-		
+
 		for (String obsolete : outdated) {
 			_cuMap.remove(obsolete);
 		}
-		
+
 		Set<RelationshipModel> toRemove = new HashSet<RelationshipModel>();
 		_relationshipChanges = getRootModel().getRelationshipCache().processChanges();
-		
+
 		// update the relationships as appropriate
 		for (RelationshipModel rModel : _relationshipChanges) {
 			if (rModel.getRelationships().size() == 0) { // removal
@@ -1464,9 +1457,8 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				toRemove.add(rModel);
 			} else {
 				rModel.setParent(getRootModel());
-				
-				if (rModel.getSourceModel() != null &&
-						rModel.getTargetModel() != null) {
+
+				if (rModel.getSourceModel() != null && rModel.getTargetModel() != null) {
 					if (!getRootModel().getRelationships().contains(rModel)) {
 						getRootModel().addChild(rModel);
 						toRemove.add(rModel);
@@ -1474,40 +1466,41 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 				}
 			}
 		}
-		
-		// update the cardinality labels of all updated relationships 
+
+		// update the cardinality labels of all updated relationships
 		for (RelationshipModel model : toRemove) {
 			model.updateCardinality();
 		}
-		
+
 		_relationshipChanges.removeAll(toRemove);
 	}
 
 	/**
-	 * Preserves consistency between the editor and the code by automatically
-	 * saving open <code>CompilationUnit</code>s 
+	 * Preserves consistency between the editor and the code by automatically saving
+	 * open <code>CompilationUnit</code>s
 	 */
 	public void autoSave() {
-		if (!PlugIn.getBooleanPreference(P_AUTOSAVE)) return;
-		
+		if (!PlugIn.getBooleanPreference(P_AUTOSAVE))
+			return;
+
 		// save all open compilation units
-		IDE.saveAllEditors(
-				new IResource[] { PlugIn.getWorkspaceRoot() }, false);
+		IDE.saveAllEditors(new IResource[] { PlugIn.getWorkspaceRoot() }, false);
 	}
-	
+
 	/**
 	 * Gets an AST <code>CompilationUnit</code> from the mapping using the given
-	 * <code>IJavaElement</code>, which should be either an
-	 * <code>IClassFile</code> or an <code>ICompilationUnit</code>
+	 * <code>IJavaElement</code>, which should be either an <code>IClassFile</code>
+	 * or an <code>ICompilationUnit</code>
 	 * 
-	 * @param element - The element to find in the mapping.
-	 * @return The AST <code>CompilationUnit</code> the represents the structure
-	 * of the given element
+	 * @param element
+	 *            - The element to find in the mapping.
+	 * @return The AST <code>CompilationUnit</code> the represents the structure of
+	 *         the given element
 	 */
 	public CompilationUnit getCompilationUnit(IJavaElement element) {
 		return _cuMap.getCompilationUnit(element.getHandleIdentifier());
 	}
-	
+
 	/**
 	 * @return The router used in the current routing scheme.
 	 */
@@ -1521,7 +1514,7 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	public static DiagramEditor getActiveEditor() {
 		return ACTIVE_EDITOR;
 	}
-	
+
 	/**
 	 * @return The currently active tool in the palette.
 	 */
@@ -1532,31 +1525,30 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
 	/**
 	 * Determines whether or not the given member is filtered.
 	 * 
-	 * @param member - the given <code>IMember</code>.
+	 * @param member
+	 *            - the given <code>IMember</code>.
 	 * @return true if a filter applies to the member, false otherwise.
 	 * @throws JavaModelException
 	 */
-	public boolean isFiltered(IMember member)
-	throws JavaModelException {
+	public boolean isFiltered(IMember member) throws JavaModelException {
 		for (Filter filter : _filters) {
-			if (filter.accept(member)) return true;
+			if (filter.accept(member))
+				return true;
 		}
-		
+
 		return false;
 	}
 
 	public static void setOutlinePage(OutlinePage page) {
 		_outlinePage = page;
 	}
-	
+
 	public Rectangle getSize() {
 		return getGraphicalControl().getBounds();
 	}
 
 	@Override
 	public void stackChanged(CommandStackEvent event) {
-		// TODO Auto-generated method stub
-		//super.stackChanged(event);
 		checkDirty();
 	}
 }
@@ -1570,7 +1562,8 @@ public class DiagramEditor extends GraphicalEditorWithFlyoutPalette implements
  */
 class DiagramPartFactory implements EditPartFactory {
 	/**
-	 * @see org.eclipse.gef.EditPartFactory#createEditPart(org.eclipse.gef.EditPart, java.lang.Object)
+	 * @see org.eclipse.gef.EditPartFactory#createEditPart(org.eclipse.gef.EditPart,
+	 *      java.lang.Object)
 	 */
 	public EditPart createEditPart(EditPart context, Object oModel) {
 		try {
@@ -1590,8 +1583,7 @@ class DiagramPartFactory implements EditPartFactory {
 
 			// throw an error if there is no empty constructor
 			if (instance == null) {
-				GreenException.illegalOperation(
-						"Model has no empty constructor: " + model);
+				GreenException.illegalOperation("Model has no empty constructor: " + model);
 			}
 
 			// connect the model and controller
@@ -1600,7 +1592,7 @@ class DiagramPartFactory implements EditPartFactory {
 
 			// map the model to its corresponding edit part
 			RootPart drep;
-			
+
 			if (part instanceof RootPart) {
 				drep = (RootPart) part;
 			} else {
@@ -1621,14 +1613,14 @@ class DiagramPartFactory implements EditPartFactory {
 
 /**
  * Sets up the tools in the palette.
+ * 
  * @author bcmartin
  */
 class DiagramPaletteFactory {
 	/**
 	 * A generic selection tool.
 	 */
-	private static ToolEntry SELECTION_TOOL = new PanningSelectionToolEntry(
-			SELECTION_LABEL, SELECTION_DESCRIPTION);
+	private static ToolEntry SELECTION_TOOL = new PanningSelectionToolEntry(SELECTION_LABEL, SELECTION_DESCRIPTION);
 
 	/**
 	 * @return The generic selection tool.
@@ -1642,9 +1634,9 @@ class DiagramPaletteFactory {
 	 *
 	 * @return The bottom-level palette contents.
 	 */
-	public static PaletteRoot createPaletteRoot( ) {
+	public static PaletteRoot createPaletteRoot() {
 		ImageDescriptor noteIcon = JavaPluginImages.DESC_TOOL_SHOW_SEGMENTS;
-		
+
 		PaletteRoot paletteRoot = new PaletteRoot();
 
 		// create relationship groups
@@ -1665,22 +1657,22 @@ class DiagramPaletteFactory {
 		// Type tools and Note tool
 		PaletteGroup typeDrawer = new PaletteGroup(GROUP_CREATE_TYPE_LABEL);
 		List<ITypeProperties> properties = new ArrayList<ITypeProperties>();
-		
+
 		// put types in alphabetical order
 		for (ITypeProperties prop : PlugIn.getAvailableTypes()) {
 			boolean added = false;
 			int x = 0;
-						
+
 			for (ITypeProperties cProp : properties) {
 				if (prop.getLabel().compareToIgnoreCase(cProp.getLabel()) < 0) {
 					properties.add(x, prop);
 					added = true;
 					break;
 				}
-				
+
 				x++;
 			}
-			
+
 			if (!added) {
 				properties.add(prop);
 			}
@@ -1688,104 +1680,98 @@ class DiagramPaletteFactory {
 
 		// create palette entries for available types
 		for (ITypeProperties prop : properties) {
-			typeEntries.add(new CombinedTemplateCreationEntry(prop.getLabel(),
-					prop.getDescription(), TypeModel.class,
-					new SimpleFactory(TypeModel.class),
-					prop.getIconDescriptor(), prop.getIconDescriptor()));
+			typeEntries.add(new CombinedTemplateCreationEntry(prop.getLabel(), prop.getDescription(), TypeModel.class,
+					new SimpleFactory(TypeModel.class), prop.getIconDescriptor(), prop.getIconDescriptor()));
 		}
 
-		typeEntries.add(new CombinedTemplateCreationEntry(noteLabel, noteDesc,
-				NoteModel.class, new SimpleFactory(NoteModel.class), noteIcon,
-				noteIcon));
+		typeEntries.add(new CombinedTemplateCreationEntry(noteLabel, noteDesc, NoteModel.class,
+				new SimpleFactory(NoteModel.class), noteIcon, noteIcon));
 
 		typeDrawer.addAll(typeEntries);
 
 		// create container for relationship tools
-		PaletteGroup relDrawer =
-			new PaletteGroup(GROUP_CREATE_RELATIONSHIPS_LABEL);
+		PaletteGroup relDrawer = new PaletteGroup(GROUP_CREATE_RELATIONSHIPS_LABEL);
 		List<Class> relClasses = new ArrayList<Class>();
-		
-		/* Ensure the relationships are added to the palette in the correct
-		 * order by comparing their names to one another beforehand
+
+		/*
+		 * Ensure the relationships are added to the palette in the correct order by
+		 * comparing their names to one another beforehand
 		 */
 
 		for (Class klass : PlugIn.getRelationships()) {
 			boolean added = false;
 			int x = 0;
-			
+
 			for (Class comp : relClasses) {
-				if (PlugIn.getRelationshipName(klass).compareToIgnoreCase(
-						PlugIn.getRelationshipName(comp)) < 0) {
+				if (PlugIn.getRelationshipName(klass).compareToIgnoreCase(PlugIn.getRelationshipName(comp)) < 0) {
 					relClasses.add(x, klass);
 					added = true;
 					break;
 				}
-				
+
 				x++;
 			}
-			
+
 			if (!added) {
 				relClasses.add(klass);
 			}
 		}
-		
+
 		String oldName = null;
-		
-		/* Map all relationships to their supertypes (e.g. dependency has more
-		 * than one flavor.
-		 */ 
+
+		/*
+		 * Map all relationships to their supertypes (e.g. dependency has more than one
+		 * flavor.
+		 */
 		for (Class klass : relClasses) {
 			RelationshipGroup group = PlugIn.getRelationshipGroup(klass);
-			
-			List<RelationshipSubtype> subtypes =
-				PlugIn.getRelationshipSubtypes(group.getName());
 
-			if(group.getName().equals(oldName)) continue;
+			List<RelationshipSubtype> subtypes = PlugIn.getRelationshipSubtypes(group.getName());
+
+			if (group.getName().equals(oldName))
+				continue;
 			oldName = group.getName();
-			
+
 			if (subtypes == null || subtypes.size() < 2) {
 				RelationshipCreationToolEntry entry = new RelationshipCreationToolEntry(group, null);
 				relEntries.add(entry);
-			}
-			else {
+			} else {
 				PaletteStack pstack = new PaletteStack(null, null, null);
-				
-				for(RelationshipSubtype type : subtypes) {
-					RelationshipCreationToolEntry entry =
-						new RelationshipCreationToolEntry(type.getGroup(), null);
+
+				for (RelationshipSubtype type : subtypes) {
+					RelationshipCreationToolEntry entry = new RelationshipCreationToolEntry(type.getGroup(), null);
 					entry.setLabel(type.getLabel() + " " + type.getGroup().getName());
 					pstack.add(entry);
 				}
 				relEntries.add(pstack);
-				
+
 			}
 		}
-		
+
 		relDrawer.addAll(relEntries);
-		
-		PaletteGroup visDrawer =
-			new PaletteGroup(GROUP_VISIBILITY_LABEL);
+
+		PaletteGroup visDrawer = new PaletteGroup(GROUP_VISIBILITY_LABEL);
 		List<PaletteEntry> visEntries = new ArrayList<PaletteEntry>();
-		ImageDescriptor fishIcon = ImageDescriptor.createFromFile( DiagramEditor.class, "fish.gif" );
-		visEntries.add( new PaletteButton(TOGGLEFISH_LABEL, TOGGLEFISH_DESCRIPTION, fishIcon, fishIcon ) {
+		ImageDescriptor fishIcon = ImageDescriptor.createFromFile(DiagramEditor.class, "fish.gif");
+		visEntries.add(new PaletteButton(TOGGLEFISH_LABEL, TOGGLEFISH_DESCRIPTION, fishIcon, fishIcon) {
 			{
 				setUserModificationPermission(PERMISSION_NO_MODIFICATION);
 			}
-			
-			public void act( ) {
+
+			public void act() {
 				PlugIn.setBooleanPreference(P_DISPLAY_INCREMENTAL_EXPLORER_DIA,
 						!PlugIn.getBooleanPreference(P_DISPLAY_INCREMENTAL_EXPLORER_DIA));
 			}
 		});
-		visDrawer.addAll( visEntries );
+		visDrawer.addAll(visEntries);
 
 		// add the tools into the palette root
 		categories.add(tools);
 		categories.add(typeDrawer);
 		categories.add(relDrawer);
-		categories.add( visDrawer );
+		categories.add(visDrawer);
 		paletteRoot.addAll(categories);
-		
+
 		return paletteRoot;
 	}
 }
@@ -1796,13 +1782,11 @@ class DiagramPaletteFactory {
  * @author bcmartin
  */
 class RelationshipCreationToolEntry extends CreationToolEntry {
-	public RelationshipCreationToolEntry(final RelationshipGroup group,
-			final List<RelationshipSubtype> subtypes) {
-		super(group.getName(), CREATE_RELATIONSHIP_PREFIX_DESCRIPTION
-				+ group.getName() + CREATE_RELATIONSHIP_SUFFIX_DESCRIPTION,
-				new SimpleFactory(group.getPartClass()),
-				group.getImageDescriptor(), group.getImageDescriptor());
-		
+	public RelationshipCreationToolEntry(final RelationshipGroup group, final List<RelationshipSubtype> subtypes) {
+		super(group.getName(),
+				CREATE_RELATIONSHIP_PREFIX_DESCRIPTION + group.getName() + CREATE_RELATIONSHIP_SUFFIX_DESCRIPTION,
+				new SimpleFactory(group.getPartClass()), group.getImageDescriptor(), group.getImageDescriptor());
+
 		setToolClass(ConnectionCreationTool.class);
 		setUserModificationPermission(PERMISSION_NO_MODIFICATION);
 	}
@@ -1821,15 +1805,14 @@ abstract class PaletteButton extends ToolEntry {
 	 * @param iconSmall
 	 * @param iconLarge
 	 */
-	public PaletteButton ( String label, String shortDesc,
-			ImageDescriptor iconSmall, ImageDescriptor iconLarge ) {
-		super( label, shortDesc, iconSmall, iconLarge );
+	public PaletteButton(String label, String shortDesc, ImageDescriptor iconSmall, ImageDescriptor iconLarge) {
+		super(label, shortDesc, iconSmall, iconLarge);
 	}
-	
+
 	/**
 	 * Override to specify what this button will execute when clicked.
 	 */
-	public abstract void act( );
+	public abstract void act();
 }
 
 /**
@@ -1844,61 +1827,66 @@ class DiagramEditorFilePolicies {
 	/**
 	 * Indicates to the user that there was an I/O error in Green.
 	 * 
-	 * @param file - The file with the invalid format.
+	 * @param file
+	 *            - The file with the invalid format.
 	 */
 	private static void displayInvalidFileFormatError(File file) {
 		GreenException.fileException(GRERR_FILE_FORMAT);
 	}
-	
+
 	/**
 	 * Attempts to find the Type in the Java Model
 	 * 
-	 * @param projectName - the String name of the project
-	 * @param path - the IPath of the Compilation Unit containing the type
+	 * @param projectName
+	 *            - the String name of the project
+	 * @param path
+	 *            - the IPath of the Compilation Unit containing the type
 	 * @return the desired <code>IType</code> that is modeled by our diagram
 	 */
 	private static IType extractType(String projectName, String fullyQualifiedTypeName) {
 		try {
-			IJavaModel jm =
-				JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
-			return jm.getJavaProject(projectName).findType(
-					fullyQualifiedTypeName);
+			IJavaModel jm = JavaCore.create(ResourcesPlugin.getWorkspace().getRoot());
+			return jm.getJavaProject(projectName).findType(fullyQualifiedTypeName);
 		} catch (JavaModelException e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
-	
+
 	/**
-	 * @param handleId - The handle to the type.
+	 * @param handleId
+	 *            - The handle to the type.
 	 * @return The type referred to by this handle.
 	 */
 	private static IType extractType(String handleId) {
 		IType type = (IType) JavaCore.create(handleId);
-		if (type.exists()) return type;
+		if (type.exists())
+			return type;
 		return null;
 	}
-	
+
 	/**
-	 * Loads a UML file into an editor. This method delegates the interpretation
-	 * of the file's contents to a private helper method of the same name; thus
-	 * this method should never need maintenance.
+	 * Loads a UML file into an editor. This method delegates the interpretation of
+	 * the file's contents to a private helper method of the same name; thus this
+	 * method should never need maintenance.
 	 * 
-	 * @param file - The file to be loaded into this editor.
+	 * @param file
+	 *            - The file to be loaded into this editor.
 	 */
 	public static void load(final DiagramEditor editor, final File file) {
-		
-		//LOOKINTO [Can be removed if refactoring is done through extension point.] Refactoring in DIA files, this needs to parse Eclipse FQN format
-		
+
+		// LOOKINTO [Can be removed if refactoring is done through extension point.]
+		// Refactoring in DIA files, this needs to parse Eclipse FQN format
+
 		final XMLConverter converter = new XMLConverter();
 		final XMLNode node, parent;
-		
+
 		char[] fileContents = new char[(int) file.length()];
-		
+
 		// read the file and parse the contents
 		try {
 			FileReader fReader = null;
-			
+
 			try {
 				fReader = new FileReader(file);
 			} catch (FileNotFoundException e) {
@@ -1906,33 +1894,32 @@ class DiagramEditorFilePolicies {
 				GreenException.warn("The file " + file + " was not found.");
 				return;
 			}
-			
+
 			fReader.read(fileContents);
 			fReader.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		if (fileContents.length < 5) {
 			// file is "empty" - no error
 			return;
 		}
-		
+
 		node = converter.getDecodedXML(new String(fileContents));
-		
+
 		if (!node.getName().equals("!root")) {
 			// invalid file format
 			displayInvalidFileFormatError(file);
 			return;
 		}
-		
-		if (node.getChildren().size() == 0) { return; }
-		parent = (XMLNode) node.getChild(XML_UML);
-		
+
+		if (node.getChildren().size() == 0) {
+			return;
+		}
+		parent = node.getChild(XML_UML);
+
 		PlugIn.runWithoutRecognizers(new Runnable() {
 			/**
 			 * @see java.lang.Runnable#run()
@@ -1942,62 +1929,60 @@ class DiagramEditorFilePolicies {
 			}
 		});
 	}
-	
+
 	/**
 	 * Saves the current editor.
 	 * 
-	 * @param askForName - Will ask for name if <code>true</code>.
+	 * @param askForName
+	 *            - Will ask for name if <code>true</code>.
 	 */
 	public static void save(DiagramEditor editor, boolean askForName) {
 		IPath filePath = new Path("/noname");
-		
+
 		if (editor.getEditorInput() instanceof GreenEditorInput) {
 			GreenEditorInput input = (GreenEditorInput) editor.getEditorInput();
 			filePath = new Path(input.getPath().toFile().toString());
 		}
-		
+
 		// in case the file is saved outside of Eclipse
 		if (editor.getCurrentFile() != null) {
-			filePath = PlugIn.getWorkspaceRoot().getFile(
-					editor.getCurrentFile().getFullPath()).getLocation();
+			filePath = PlugIn.getWorkspaceRoot().getFile(editor.getCurrentFile().getFullPath()).getLocation();
 		}
-		
+
 		// Open dialog and ask for a name
 		if (askForName || !filePath.toFile().exists()) {
 			// display the dialog to get the file location
 			String fileName = filePath.toString();
-			FileDialog dialog = new FileDialog(
-					editor.getSite().getShell(), SWT.SAVE);
-			dialog.setFileName(fileName.substring(fileName.lastIndexOf('/') + 1, 
-												  fileName.lastIndexOf('.')));
+			FileDialog dialog = new FileDialog(editor.getSite().getShell(), SWT.SAVE);
+			dialog.setFileName(fileName.substring(fileName.lastIndexOf('/') + 1, fileName.lastIndexOf('.')));
 
 			List<String> extensions = new ArrayList<String>();
-			List<String> fExt       = new ArrayList<String>();
-			List<String> fDesc      = new ArrayList<String>();
+			List<String> fExt = new ArrayList<String>();
+			List<String> fDesc = new ArrayList<String>();
 
 			// get file extensions
 			List<String> saveFormats = PlugIn.getSaveFormats();
 			for (int i = 0; i < saveFormats.size(); i++) {
 				String ext = saveFormats.get(i);
 				extensions.add(ext);
-				
+
 				String sExt = "*." + ext;
 				ISaveFormat format = PlugIn.getSaveFormat(ext);
-				
+
 				String desc = format.getDescription();
 				if (desc == "null") {
 					desc = "";
 				}
-				
+
 				fExt.add(sExt);
 				fDesc.add(format.getDescription() + " (" + sExt + ")");
 			}
-			
+
 			dialog.setFilterExtensions(fExt.toArray(new String[0]));
 			dialog.setFilterNames(fDesc.toArray(new String[0]));
 			dialog.setFilterPath(filePath.toOSString());
 			fileName = dialog.open();
-			
+
 			// abort if the user pressed cancel
 			if (fileName == null)
 				return;
@@ -2006,65 +1991,53 @@ class DiagramEditorFilePolicies {
 				int filterIdx = dialog.getFilterIndex();
 				if (filterIdx != -1) {
 					String ext = extensions.get(filterIdx);
-					
-					// Append the appropriate extension to the filename if the current one is different
+
+					// Append the appropriate extension to the filename if the current one is
+					// different
 					// from what the selected format requires:
-					if ( !fileName.endsWith("." + ext) &&
-					     !(fileName.endsWith(".dia") && ext.equals(PluginConstants.GREEN_EXTENSION)) )
-						 // Both "dia" and "grn" are acceptable for the "Green File" format.
+					if (!fileName.endsWith("." + ext)
+							&& !(fileName.endsWith(".dia") && ext.equals(PluginConstants.GREEN_EXTENSION)))
+					// Both "dia" and "grn" are acceptable for the "Green File" format.
 					{
 						fileName += ("." + ext);
 					}
 				}
 			}
-			
+
 			// see if the file path is in the workspace
 			filePath = new Path(fileName);
-			String workspaceString =
-				PlugIn.getWorkspaceRoot().getLocation().toPortableString();
-			String workspaceDir = workspaceString.substring(
-					workspaceString.lastIndexOf('/')) + "/";
+			String workspaceString = PlugIn.getWorkspaceRoot().getLocation().toPortableString();
+			String workspaceDir = workspaceString.substring(workspaceString.lastIndexOf('/')) + "/";
 			String fileLocation = filePath.toPortableString();
 
 			int wsIndex = fileLocation.indexOf(workspaceDir);
-			 
-			if (wsIndex == -1) { // not a workspace file path	
+
+			if (wsIndex == -1) { // not a workspace file path
 				try {
 					filePath.toFile().createNewFile();
 				} catch (IOException e) {
-					GreenException.fileException(
-							"There was a problem accessing \""
-							+ filePath + "\"");
+					GreenException.fileException("There was a problem accessing \"" + filePath + "\"");
 					e.printStackTrace();
 					return;
 				}
-				
+
 				if (filePath.toString().endsWith("." + PluginConstants.GREEN_EXTENSION) ||
-						//Older file type compatibility
-						filePath.toString().endsWith(".dia")
-						) {
-					editor.setEditorInput(new GreenEditorInput(
-							new File(filePath.toOSString())));
+				// Older file type compatibility
+						filePath.toString().endsWith(".dia")) {
+					editor.setEditorInput(new GreenEditorInput(new File(filePath.toOSString())));
 				}
 			} else { // save file in workspace
-				String wsFile = fileLocation.substring(
-						wsIndex + workspaceDir.length());
+				String wsFile = fileLocation.substring(wsIndex + workspaceDir.length());
 				String wsProject = wsFile.substring(0, wsFile.indexOf('/'));
-				
+
 				try {
-					IProject project =
-						PlugIn.getWorkspaceRoot().getProject(wsProject);
-					IFile file = DiagramEditor.getFileNotExist(project,
-							new Path(wsFile));
+					IProject project = PlugIn.getWorkspaceRoot().getProject(wsProject);
+					IFile file = DiagramEditor.getFileNotExist(project, new Path(wsFile));
 
 					editor.setEditorInput(new FileEditorInput(file));
-				
-					filePath = PlugIn.getWorkspaceRoot().getFile(
-							editor.getCurrentFile().getFullPath()).getLocation();
-				} catch (CoreException e) {
-					e.printStackTrace();
-					return;
-				} catch (IOException e) {
+
+					filePath = PlugIn.getWorkspaceRoot().getFile(editor.getCurrentFile().getFullPath()).getLocation();
+				} catch (CoreException | IOException e) {
 					e.printStackTrace();
 					return;
 				}
@@ -2077,57 +2050,62 @@ class DiagramEditorFilePolicies {
 			format = PlugIn.getSaveFormat(PluginConstants.GREEN_EXTENSION);
 		else
 			format = PlugIn.getSaveFormat(ext);
-		
+
 		if (format == null) {
-			MessageDialog.openError(editor.getSite().getShell(),
-					GRERR_FILE_FORMAT, GRERR_FILE_FORMAT + ": " + ext);
+			MessageDialog.openError(editor.getSite().getShell(), GRERR_FILE_FORMAT, GRERR_FILE_FORMAT + ": " + ext);
 			return;
 		}
-		
-		format.saveInformation(editor, filePath.toOSString(),
-				editor.getRootPart().getFigure());
+
+		format.saveInformation(editor, filePath.toOSString(), editor.getRootPart().getFigure());
 	}
-	
+
 	/**
-	 * Handles loading of the editor's contents by extracting the file and
-	 * plugin version. The versions are then compared, warning messages are
-	 * displayed as appropriate, and the delegate methods are called to perform
-	 * the loading of the editor's contents.
+	 * Handles loading of the editor's contents by extracting the file and plugin
+	 * version. The versions are then compared, warning messages are displayed as
+	 * appropriate, and the delegate methods are called to perform the loading of
+	 * the editor's contents.
 	 * 
-	 * @param editor - The editor to load the file's contents into.
-	 * @param base - The node with label XML_UML.
+	 * @param editor
+	 *            - The editor to load the file's contents into.
+	 * @param base
+	 *            - The node with label XML_UML.
 	 */
 	private static void load(DiagramEditor editor, XMLNode base) {
 		final RootModel root = editor.getRootModel();
-		
+
 		String version = base.getAttribute(XML_GREEN_VERSION);
 		int pluginVersion = PlugIn.getVersion();
 		int fileVersion = version == null ? 20000 : Integer.parseInt(version);
-		
+
 		if (pluginVersion < fileVersion) {
-			MessageDialog.openWarning(editor.getSite().getShell(),
-					GreenException.GRERR_FILE_VERSION_TITLE,
+			MessageDialog.openWarning(editor.getSite().getShell(), GreenException.GRERR_FILE_VERSION_TITLE,
 					GreenException.generateVersionWarning(pluginVersion, fileVersion));
 			fileVersion = pluginVersion;
 		}
-		
+
 		_fileModified = false;
 		loadTypes(root, base, fileVersion);
 		loadNotes(root, base, fileVersion);
 		loadRelat(editor, root, base, fileVersion);
 
-		if(_fileModified) {warnFileModified();}
+		if (_fileModified) {
+			warnFileModified();
+		}
 	}
 
 	/**
 	 * Loads <code>TypeModel</code>s into the diagram.
 	 * 
-	 * @param root - The root model to use.
-	 * @param base - The XML_UML node of the file.
-	 * @param ver - The version number of the file.
+	 * @param root
+	 *            - The root model to use.
+	 * @param base
+	 *            - The XML_UML node of the file.
+	 * @param ver
+	 *            - The version number of the file.
 	 */
 	private static void loadTypes(RootModel root, XMLNode base, int ver) {
-		//LOOKINTO [Can be removed if refactoring is done through extension point.] Refactoring in DIA files, this should alter JDT handles...
+		// LOOKINTO [Can be removed if refactoring is done through extension point.]
+		// Refactoring in DIA files, this should alter JDT handles...
 		if (ver == 20000) {
 			// 2.0.0
 			for (XMLNode child : base.getChildren()) {
@@ -2139,14 +2117,14 @@ class DiagramEditorFilePolicies {
 					int width = child.getIntAttribute(XML_TYPE_WIDTH);
 					int x = child.getIntAttribute(XML_TYPE_X);
 					int y = child.getIntAttribute(XML_TYPE_Y);
-					
+
 					IType type = extractType(proj, fqn);
 					if (type == null) {
 						_fileModified = true;
 						GreenException.warn("Type does not exist: " + fqn);
 						continue;
 					}
-					
+
 					TypeModel model = root.createTypeModel(type);
 					model.setLocation(new Point(x, y));
 					model.setSize(new Dimension(width, height));
@@ -2162,34 +2140,35 @@ class DiagramEditorFilePolicies {
 					int width = child.getIntAttribute(XML_TYPE_WIDTH);
 					int x = child.getIntAttribute(XML_TYPE_X);
 					int y = child.getIntAttribute(XML_TYPE_Y);
-					
+
 					IType type = extractType(handle);
 					if (type == null) {
 						_fileModified = true;
 						GreenException.warn("Type does not exist: " + handle);
 						continue;
 					}
-					
+
 					TypeModel model = root.createTypeModel(type);
 					model.setLocation(new Point(x, y));
 					model.setSize(new Dimension(width, height));
 				}
 			}
 		} else {
-			GreenException.warn(
-					"loadTypes failed: invalid file version: " + ver);
+			GreenException.warn("loadTypes failed: invalid file version: " + ver);
 		}
 	}
 
 	/**
 	 * Loads <code>RelationshipModel</code>s into the diagram.
 	 * 
-	 * @param root - The root model to use.
-	 * @param base - The XML_UML node of the file.
-	 * @param ver - The version number of the file.
+	 * @param root
+	 *            - The root model to use.
+	 * @param base
+	 *            - The XML_UML node of the file.
+	 * @param ver
+	 *            - The version number of the file.
 	 */
-	private static void loadRelat(DiagramEditor editor, RootModel root,
-			XMLNode base, int ver) {
+	private static void loadRelat(DiagramEditor editor, RootModel root, XMLNode base, int ver) {
 		// the editor must be forcibly refreshed so that the relationships
 		// will appear; we are running with recognizers disabled
 		editor.refresh(true);
@@ -2199,44 +2178,31 @@ class DiagramEditorFilePolicies {
 			// 2.0.0
 			for (XMLNode relationshipNode : base.getChildren()) {
 				if (relationshipNode.getName().equals(XML_RELATIONSHIP)) {
-					String relationshipClass = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_CLASS);
-					String sourceProj = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_SOURCE_PROJECT);
-					String sourceName = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_SOURCE_TYPE);
-					String targetProj = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_TARGET_PROJECT);
-					String targetName = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_TARGET_TYPE);
-					
+					String relationshipClass = relationshipNode.getAttribute(XML_RELATIONSHIP_CLASS);
+					String sourceProj = relationshipNode.getAttribute(XML_RELATIONSHIP_SOURCE_PROJECT);
+					String sourceName = relationshipNode.getAttribute(XML_RELATIONSHIP_SOURCE_TYPE);
+					String targetProj = relationshipNode.getAttribute(XML_RELATIONSHIP_TARGET_PROJECT);
+					String targetName = relationshipNode.getAttribute(XML_RELATIONSHIP_TARGET_TYPE);
+
 					IType sourcetype = extractType(sourceProj, sourceName);
 					IType targettype = extractType(targetProj, targetName);
-					RelationshipModel rModel =
-						cache.getRelationshipModel(sourcetype,
-								targettype, relationshipClass);
-					
+					RelationshipModel rModel = cache.getRelationshipModel(sourcetype, targettype, relationshipClass);
+
 					if (rModel != null) {
-						XMLNode bendpointsNode =
-							relationshipNode.getChild(
-									XML_BENDPOINTS);
-						
-						for (XMLNode bendpointNode
-								: bendpointsNode.getChildren()) {
-							if (bendpointNode.getName().equals(
-									XML_BENDPOINT)) {
-								
+						XMLNode bendpointsNode = relationshipNode.getChild(XML_BENDPOINTS);
+
+						for (XMLNode bendpointNode : bendpointsNode.getChildren()) {
+							if (bendpointNode.getName().equals(XML_BENDPOINT)) {
+
 								int x = new Integer(bendpointNode.getAttribute(XML_BENDPOINT_X)).intValue();
 								int y = new Integer(bendpointNode.getAttribute(XML_BENDPOINT_Y)).intValue();
-								
-								editor.addBendpoint(
-										rModel, new Point(x, y));
+
+								editor.addBendpoint(rModel, new Point(x, y));
 							}
 						}
-					}
-					else {//Relationship changed?
+					} else {// Relationship changed?
 						_fileModified = true;
-						
+
 					}
 				}
 			}
@@ -2244,54 +2210,45 @@ class DiagramEditorFilePolicies {
 			// 2.1.0 - 3.0.0
 			for (XMLNode relationshipNode : base.getChildren()) {
 				if (relationshipNode.getName().equals(XML_RELATIONSHIP)) {
-					String relationshipClass = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_CLASS);
-					String sourceId = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_SOURCE_TYPE);
-					String targetId = relationshipNode.getAttribute(
-							XML_RELATIONSHIP_TARGET_TYPE);
-					
+					String relationshipClass = relationshipNode.getAttribute(XML_RELATIONSHIP_CLASS);
+					String sourceId = relationshipNode.getAttribute(XML_RELATIONSHIP_SOURCE_TYPE);
+					String targetId = relationshipNode.getAttribute(XML_RELATIONSHIP_TARGET_TYPE);
+
 					IType sourcetype = extractType(sourceId);
 					IType targettype = extractType(targetId);
-					RelationshipModel rModel =
-						cache.getRelationshipModel(sourcetype,
-								targettype, relationshipClass);
-					
+					RelationshipModel rModel = cache.getRelationshipModel(sourcetype, targettype, relationshipClass);
+
 					if (rModel != null) {
-						XMLNode bendpointsNode =
-							relationshipNode.getChild(
-									XML_BENDPOINTS);
-						
-						for (XMLNode bendpointNode
-								: bendpointsNode.getChildren()) {
-							if (bendpointNode.getName().equals(
-									XML_BENDPOINT)) {
-								
+						XMLNode bendpointsNode = relationshipNode.getChild(XML_BENDPOINTS);
+
+						for (XMLNode bendpointNode : bendpointsNode.getChildren()) {
+							if (bendpointNode.getName().equals(XML_BENDPOINT)) {
+
 								int x = new Integer(bendpointNode.getAttribute(XML_BENDPOINT_X)).intValue();
 								int y = new Integer(bendpointNode.getAttribute(XML_BENDPOINT_Y)).intValue();
-								
-								editor.addBendpoint(
-										rModel, new Point(x, y));
+
+								editor.addBendpoint(rModel, new Point(x, y));
 							}
 						}
-					}
-					else {
+					} else {
 						_fileModified = true;
 					}
 				}
 			}
 		} else {
-			GreenException.warn(
-					"loadRelat failed: invalid file version: " + ver);
+			GreenException.warn("loadRelat failed: invalid file version: " + ver);
 		}
 	}
-	
+
 	/**
 	 * Loads <code>NoteModel</code>s into the diagram.
 	 * 
-	 * @param root - The root model to use.
-	 * @param base - The XML_UML node of the file.
-	 * @param ver - The version number of the file.
+	 * @param root
+	 *            - The root model to use.
+	 * @param base
+	 *            - The XML_UML node of the file.
+	 * @param ver
+	 *            - The version number of the file.
 	 */
 	private static void loadNotes(RootModel root, XMLNode base, int ver) {
 		if (ver <= PlugIn.getVersion()) {
@@ -2303,12 +2260,12 @@ class DiagramEditorFilePolicies {
 					int width = child.getIntAttribute(XML_NOTE_WIDTH);
 					int x = child.getIntAttribute(XML_NOTE_X);
 					int y = child.getIntAttribute(XML_NOTE_Y);
-					
+
 					NoteModel model = new NoteModel();
 					model.setLabel(text);
 					model.setLocation(new Point(x, y));
 					model.setSize(new Dimension(width, height));
-					
+
 					root.addChild(model);
 				}
 			}
@@ -2318,15 +2275,14 @@ class DiagramEditorFilePolicies {
 	}
 
 	/**
-	 * Informs the user that the diagram cannot accurately reflect changes made to the code
-	 * while it was closed.
+	 * Informs the user that the diagram cannot accurately reflect changes made to
+	 * the code while it was closed.
 	 * 
 	 * @author zgwang
 	 */
 	private static void warnFileModified() {
 		String warning = "One or more files this diagram refers to have been modified outside of Green's editor.  The diagram may be unable to accurately reflect these changes.";
-		MessageDialog.openInformation(PlugIn.getDefaultShell(),
-				"Error", warning);
+		MessageDialog.openInformation(PlugIn.getDefaultShell(), "Error", warning);
 	}
 }
 
@@ -2336,10 +2292,9 @@ class DiagramEditorFilePolicies {
  * 
  * @author bcmartin
  */
-class GreenEditorInput implements IEditorInput, ILocationProvider,
-IPathEditorInput {
+class GreenEditorInput implements IEditorInput, ILocationProvider, IPathEditorInput {
 	private File _file;
-	
+
 	public GreenEditorInput(File file) {
 		_file = file;
 	}
@@ -2350,35 +2305,35 @@ IPathEditorInput {
 	public boolean exists() {
 		return _file.exists();
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getImageDescriptor()
 	 */
 	public ImageDescriptor getImageDescriptor() {
 		return null;
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getName()
 	 */
 	public String getName() {
 		return _file.getName();
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getPersistable()
 	 */
 	public IPersistableElement getPersistable() {
 		return null;
 	}
-	
+
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getToolTipText()
 	 */
 	public String getToolTipText() {
 		return _file.getAbsolutePath();
 	}
-	
+
 	/**
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
 	 */
@@ -2386,9 +2341,10 @@ IPathEditorInput {
 		if (ILocationProvider.class.equals(adapter)) {
 			return this;
 		}
-		
+
 		if (IWorkbenchAdapter.class.equals(adapter)) {
-			return new WorkbenchAdapter() {};
+			return new WorkbenchAdapter() {
+			};
 		}
 
 		return Platform.getAdapterManager().getAdapter(this, adapter);
@@ -2402,7 +2358,7 @@ IPathEditorInput {
 			GreenEditorInput input = (GreenEditorInput) element;
 			return Path.fromOSString(input._file.getAbsolutePath());
 		}
-		
+
 		return null;
 	}
 
@@ -2430,29 +2386,30 @@ class Filter {
 		_type = type;
 		_flags = flags;
 	}
-	
+
 	/**
 	 * Compares the given member to the filter to see if it applies.
 	 * 
-	 * @param element - The <code>IMember</code> to compare.
-	 * @return true if the filter applies, false otherwise. 
+	 * @param element
+	 *            - The <code>IMember</code> to compare.
+	 * @return true if the filter applies, false otherwise.
 	 */
 	public boolean accept(IMember element) throws JavaModelException {
 		// see if the element type applies
 		if ((_type & element.getElementType()) != _type) {
 			return false;
 		}
-		
+
 		// see if the flags match
 		if ((_flags & element.getFlags()) != _flags) {
 			return false;
 		}
-		
+
 		// see if the text matches
 		if (!_pattern.matcher(element.getElementName()).matches()) {
 			return false;
 		}
-		
+
 		return false;
 	}
 }
@@ -2467,34 +2424,34 @@ class BendpointInformation {
 	private RelationshipModel _rModel;
 	private Point _location;
 
-	public BendpointInformation(RelationshipModel rModel,
-			Point absoluteLocation) {
+	public BendpointInformation(RelationshipModel rModel, Point absoluteLocation) {
 		_rModel = rModel;
 		_location = absoluteLocation;
 	}
-	
+
 	/**
-	 * @param editor - The editor.
-	 * @return A <code>BendpointRequest</code> corresponding to the
-	 * appropriate <code>RelationshipModel</code> and <code>Point</code>.
+	 * @param editor
+	 *            - The editor.
+	 * @return A <code>BendpointRequest</code> corresponding to the appropriate
+	 *         <code>RelationshipModel</code> and <code>Point</code>.
 	 */
 	public BendpointRequest getBendpointRequest(DiagramEditor editor) {
-		RelationshipPart rPart = 
-			(RelationshipPart) editor.getRootPart().getPartFromModel(_rModel);
-		if (rPart == null) return null;
-		
-//		Point location = new Point();
-//		Point topLeft = rPart.getFigure().getBounds().getTopLeft();
-//		
-//		location.x = _location.x - topLeft.x / 2;
-//		location.y = _location.y - topLeft.y / 2;
-		
+		RelationshipPart rPart = (RelationshipPart) editor.getRootPart().getPartFromModel(_rModel);
+		if (rPart == null)
+			return null;
+
+		// Point location = new Point();
+		// Point topLeft = rPart.getFigure().getBounds().getTopLeft();
+		//
+		// location.x = _location.x - topLeft.x / 2;
+		// location.y = _location.y - topLeft.y / 2;
+
 		// set the necessary information for the request
 		BendpointRequest request = new BendpointRequest();
 		request.setIndex(-1); // add to end
 		request.setLocation(_location);
 		request.setSource(rPart);
-		
+
 		return request;
 	}
 }
@@ -2508,65 +2465,68 @@ class BendpointInformation {
 class CompilationUnitMap {
 	private Map<String, Long> _cuModMap;
 	private Map<String, CompilationUnit> _map;
-	
+
 	public CompilationUnitMap() {
 		_cuModMap = new HashMap<String, Long>();
 		_map = new HashMap<String, CompilationUnit>();
 	}
-	
+
 	/**
-	 * @param id - The handle of the element.
-	 * @return The <code>CompilationUnit</code> corresponding to the given
-	 * id.
+	 * @param id
+	 *            - The handle of the element.
+	 * @return The <code>CompilationUnit</code> corresponding to the given id.
 	 */
 	public CompilationUnit getCompilationUnit(String id) {
 		return _map.get(id);
 	}
 
 	/**
-	 * @param id - The element handle.
-	 *  
-	 * @return The stored modification time corresponding to the given
-	 * handle.
+	 * @param id
+	 *            - The element handle.
+	 * 
+	 * @return The stored modification time corresponding to the given handle.
 	 */
 	public Long getModificationStamp(String id) {
 		return _cuModMap.get(id);
 	}
-	
+
 	/**
 	 * Removes a handle from the mapping.
 	 * 
-	 * @param id - The handle.
+	 * @param id
+	 *            - The handle.
 	 */
 	public void remove(String id) {
 		_map.remove(id);
 		_cuModMap.remove(id);
 	}
-	
+
 	/**
 	 * @return A set of all element handles in the mapping.
 	 */
 	public Set<String> keySet() {
 		return new HashSet<String>(_map.keySet());
 	}
-	
+
 	/**
 	 * Maps an element to its corresponding <code>CompilationUnit</code>.
 	 * 
-	 * @param element - The element.
-	 * @param cu - Its corresponding <code>CompilationUnit</code>.
+	 * @param element
+	 *            - The element.
+	 * @param cu
+	 *            - Its corresponding <code>CompilationUnit</code>.
 	 */
 	public void put(IJavaElement element, CompilationUnit cu) {
 		String id = element.getHandleIdentifier();
-		
+
 		_map.put(id, cu);
-		
+
 		if (!(element.isReadOnly())) {
 			_cuModMap.put(id, element.getResource().getModificationStamp());
 		}
 	}
 
-    public Object getAdapter(Class required) {
-    	return null;
-    }
+	public Object getAdapter(Class required) {
+		return null;
+	}
 }

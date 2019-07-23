@@ -136,6 +136,7 @@ public abstract class AbstractPart extends AbstractGraphicalEditPart {
 	/**
 	 * @see org.eclipse.gef.editparts.AbstractEditPart#getModelChildren()
 	 */
+	@Override
 	protected List getModelChildren() {
 		return model().getChildren();
 	}
@@ -146,6 +147,7 @@ public abstract class AbstractPart extends AbstractGraphicalEditPart {
 	/**
 	 * @see org.eclipse.gef.EditPart#activate()
 	 */
+	@Override
 	public void activate() {
 		if (getParent() != null && getParent().isActive() && !this.isActive()) {
 			super.activate();
@@ -172,6 +174,7 @@ public abstract class AbstractPart extends AbstractGraphicalEditPart {
 	/**
 	 * @see org.eclipse.gef.EditPart#deactivate()
 	 */
+	@Override
 	public void deactivate() {
 		if (isActive()) {
 			super.deactivate();

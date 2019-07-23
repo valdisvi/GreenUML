@@ -26,6 +26,7 @@ public class DependencyIRemover extends RelationshipRemover {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.ClassInstanceCreation)
 	 */
+	@Override
 	public boolean visit(ClassInstanceCreation node) {
 		ITypeBinding matchType = node.resolveTypeBinding();
 		

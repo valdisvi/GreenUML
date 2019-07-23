@@ -67,6 +67,7 @@ public class AddFieldCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#execute()
 	 */
+	@Override
 	public void execute() {
 		if (!_model.getType().getField(_fieldName).exists()) {
 			try {
@@ -94,6 +95,7 @@ public class AddFieldCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#undo()
 	 */
+	@Override
 	public void undo() {
 		List<AbstractModel> list = _model.getFieldCompartmentModel()
 				.getChildren();

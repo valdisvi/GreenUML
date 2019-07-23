@@ -38,6 +38,7 @@ public class DependencyIGenerator extends CardinalRelationshipGenerator {
 	/**
 	 * @see edu.buffalo.cse.green.relationships.RelationshipVisitor#preVisit()
 	 */
+	@Override
 	protected void preVisit() {
 		_selectedMethods = null; //Ensures that previously used methods do not carry over
 		try {

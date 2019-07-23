@@ -41,6 +41,7 @@ public class DependencyLRecognizer extends RelationshipRecognizer {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.VariableDeclarationFragment)
 	 */
+	@Override
 	public boolean visit(VariableDeclarationFragment node) {
 		checkForDependency(node.getParent(), node.getName(), node
 				.getInitializer());
@@ -50,6 +51,7 @@ public class DependencyLRecognizer extends RelationshipRecognizer {
 	/**
 	 * @see org.eclipse.jdt.core.dom.ASTVisitor#visit(org.eclipse.jdt.core.dom.Assignment)
 	 */
+	@Override
 	public boolean visit(Assignment node) {
 		checkForDependency(node.getParent(), node.getLeftHandSide(), node
 				.getRightHandSide());

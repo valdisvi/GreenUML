@@ -33,6 +33,7 @@ public class AssociationGenerator extends CardinalRelationshipGenerator {
 	/**
 	 * @see edu.buffalo.cse.green.relationships.RelationshipGenerator#needChooseTypeDialog()
 	 */
+	@Override
 	protected boolean needChooseTypeDialog() {
 		return false;
 	}

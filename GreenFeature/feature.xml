@@ -2,7 +2,7 @@
 <feature
       id="Green"
       label="Green"
-      version="4.6.0.qualifier"
+      version="4.7.0"
       provider-name="UB CSE"
       plugin="edu.buffalo.cse.green"
       os="linux,macosx,win32"
@@ -411,36 +411,77 @@ Each party waives its rights to a jury trial in any resulting
 litigation.
    </license>
 
+   <includes
+         id="org.eclipse.gmf"
+         version="1.11.0.201706061437"/>
+
+   <includes
+         id="org.eclipse.gmf.tooling"
+         version="3.0.1.201210111630"/>
+
+   <includes
+         id="org.eclipse.gmf.tooling.source"
+         version="3.0.1.201210111630"/>
+
    <requires>
-      <import plugin="org.eclipse.core.resources"/>
-      <import plugin="org.eclipse.core.runtime"/>
-      <import plugin="org.eclipse.draw2d"/>
-      <import plugin="org.eclipse.gef"/>
-      <import plugin="org.eclipse.help"/>
-      <import plugin="org.eclipse.jdt.core"/>
-      <import plugin="org.eclipse.jdt.ui"/>
-      <import plugin="org.eclipse.jface"/>
-      <import plugin="org.eclipse.jface.text"/>
-      <import plugin="org.eclipse.ltk.core.refactoring"/>
-      <import plugin="org.eclipse.ltk.ui.refactoring"/>
-      <import plugin="org.eclipse.swt"/>
-      <import plugin="org.eclipse.ui"/>
-      <import plugin="org.eclipse.ui.editors"/>
-      <import plugin="org.eclipse.ui.ide"/>
-      <import plugin="org.eclipse.ui.views"/>
-      <import plugin="org.eclipse.ui.workbench.texteditor"/>
+      <import plugin="org.eclipse.core.runtime" version="3.12.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.core.resources" version="3.11.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.gef" version="3.11.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.core" version="3.12.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.ui" version="3.7.1.r371" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jface.text" version="3.11.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ltk.core.refactoring" version="3.7.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ltk.ui.refactoring" version="3.8.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui" version="3.108.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui.editors" version="3.10.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui.ide" version="3.12.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui.views" version="3.8.100" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.osgi"/>
+      <import plugin="org.eclipse.emf.common"/>
+      <import plugin="org.eclipse.help" version="3.7.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.emf.ecore" version="2.2.0" match="compatible"/>
+      <import plugin="org.eclipse.core.resources" version="3.2.0" match="compatible"/>
+      <import plugin="org.eclipse.core.runtime" version="3.2.0" match="compatible"/>
+      <import plugin="org.eclipse.m2m.qvt.oml" version="3.0.0" match="compatible"/>
+      <import plugin="org.eclipse.m2m.qvt.oml.common" version="2.1.0"/>
+      <import plugin="org.eclipse.m2m.qvt.oml.project" version="2.1.0"/>
+      <import plugin="org.eclipse.m2m.qvt.oml.runtime" version="2.1.0"/>
+      <import plugin="lpg.runtime.java" version="2.0.17" match="compatible"/>
+      <import plugin="org.eclipse.ocl.ecore"/>
+      <import plugin="org.apache.batik.ext.awt"/>
    </requires>
 
    <plugin
          id="edu.buffalo.cse.green"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="4.7.0"/>
 
    <plugin
          id="edu.buffalo.cse.green.help"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="4.7.0"/>
+
+   <plugin
+         id="org.eclipse.gmf"
+         download-size="0"
+         install-size="0"
+         version="1.11.0.201706061437"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.gmf.xpand"
+         download-size="0"
+         install-size="0"
+         version="2.1.0.201210111630"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.gmf.xpand.qvtlibrary"
+         download-size="0"
+         install-size="0"
+         version="1.1.0.201210111630"
+         unpack="false"/>
 
 </feature>

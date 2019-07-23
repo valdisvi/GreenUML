@@ -64,7 +64,6 @@ import edu.buffalo.cse.green.editor.controller.TypePart;
 import edu.buffalo.cse.green.editor.model.MemberModel;
 import edu.buffalo.cse.green.editor.model.filters.MemberFilter;
 import edu.buffalo.cse.green.editor.save.ISaveFormat;
-import edu.buffalo.cse.green.logging.OutputStreamSplitter;
 import edu.buffalo.cse.green.logging.UmlLog;
 import edu.buffalo.cse.green.relationships.RelationshipGenerator;
 import edu.buffalo.cse.green.relationships.RelationshipGroup;
@@ -72,9 +71,6 @@ import edu.buffalo.cse.green.relationships.RelationshipRecognizer;
 import edu.buffalo.cse.green.relationships.RelationshipRemover;
 import edu.buffalo.cse.green.relationships.RelationshipSubtype;
 import edu.buffalo.cse.green.types.ITypeProperties;
-import edu.buffalo.cse.green.logging.UmlLog;
-import edu.buffalo.cse.green.logging.UmlLogAdapter;
-
 /**
  * The main plugin class to be used in the desktop. This class loads in all
  * extensions that are relevant to our editor.
@@ -166,7 +162,7 @@ public final class PlugIn extends AbstractUIPlugin {
 	 * @return the relationship group corresponding to the given name.
 	 */
 	public static RelationshipGroup getRelationshipGroup(Class klass) {
-		return (RelationshipGroup) _relationshipMap.get(klass);
+		return _relationshipMap.get(klass);
 	}
 
 	/**
@@ -227,6 +223,7 @@ public final class PlugIn extends AbstractUIPlugin {
 	/**
 	 * This method is called upon plug-in activation
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		
@@ -398,6 +395,7 @@ public final class PlugIn extends AbstractUIPlugin {
 	/**
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		super.stop(context);
 	}
@@ -445,7 +443,7 @@ public final class PlugIn extends AbstractUIPlugin {
 	 * @return The name of the relationship.
 	 */
 	public static String getRelationshipName(Class klass) {
-		return (String) _relationshipMap.get(klass).getName();
+		return _relationshipMap.get(klass).getName();
 	}
 
 	/**
@@ -543,13 +541,7 @@ public final class PlugIn extends AbstractUIPlugin {
 	 * @author zgwang
 	 */
 	public static int getVersion() {
-		//TODO Versioning, this should get cleaned up a bit.
-		//Modified to adhere to Eclipse's versioning system as of 10/10/06
-		//Reminder: in eclipse, version numbers are composed of 
-		//four (4) segments: 3 integers and a string respectively 
-		//named major.minor.service.qualifier.
-		//the qualifier is usually in the form vYYMMDD
-		String version = (String) getDefault().getBundle().getHeaders().get(
+		String version = getDefault().getBundle().getHeaders().get(
 				Constants.BUNDLE_VERSION);
 		int firstDot = version.indexOf('.');
 		int secondDot = firstDot + 1 + (version.substring(firstDot + 1)).indexOf('.');

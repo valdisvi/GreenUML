@@ -75,6 +75,7 @@ public class AddMethodCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#execute()
 	 */
+	@Override
 	public void execute() {
 		if (!_model.getType().getMethod(_methodName, new String[] {}).exists()) {
 			try {
@@ -114,6 +115,7 @@ public class AddMethodCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#undo()
 	 */
+	@Override
 	public void undo() {
 		List<AbstractModel> list = _model.getMethodCompartmentModel()
 				.getChildren();

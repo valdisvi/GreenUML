@@ -62,6 +62,7 @@ public class AddJavaElementCommand extends Command {
 	 * @see org.eclipse.gef.commands.Command#execute()
 	 * 
 	 */
+	@Override
 	public void execute() {
 		RootModel root = _editor.getRootModel();
 		_dupElement.clear();
@@ -180,6 +181,7 @@ public class AddJavaElementCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#canUndo()
 	 */
+	@Override
 	public boolean canUndo() {
 		return false;
 	}
@@ -217,6 +219,7 @@ public class AddJavaElementCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#undo()
 	 */
+	@Override
 	public void undo() {
 		for (Command command : _commands) {
 			command.undo();
@@ -228,6 +231,7 @@ public class AddJavaElementCommand extends Command {
 	/**
 	 * @see org.eclipse.gef.commands.Command#redo()
 	 */
+	@Override
 	public void redo() {
 		execute();
 	}
@@ -261,6 +265,7 @@ public class AddJavaElementCommand extends Command {
 		/**
 		 * @see org.eclipse.gef.commands.Command#execute()
 		 */
+		@Override
 		public void execute() {
 			_model = _root.createTypeModel(_type);
 
@@ -272,6 +277,7 @@ public class AddJavaElementCommand extends Command {
 		/**
 		 * @see org.eclipse.gef.commands.Command#undo()
 		 */
+		@Override
 		public void undo() {
 			_model.removeFromParent();
 		}
@@ -279,6 +285,7 @@ public class AddJavaElementCommand extends Command {
 		/**
 		 * @see org.eclipse.gef.commands.Command#redo()
 		 */
+		@Override
 		public void redo() {
 			execute();
 		}
