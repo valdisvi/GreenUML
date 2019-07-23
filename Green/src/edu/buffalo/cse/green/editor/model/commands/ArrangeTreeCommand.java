@@ -13,6 +13,9 @@
  */
 package edu.buffalo.cse.green.editor.model.commands;
 
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -104,6 +107,15 @@ public class ArrangeTreeCommand extends Command {
 		}
 		
 		editor.checkDirty();
+		
+		// Simulate a key press for key "a", to call AutoFitACtion and show all layout
+		try {
+			Robot robot = new Robot();
+			robot.keyPress(KeyEvent.VK_A);
+	        robot.keyRelease(KeyEvent.VK_A);
+		} catch (AWTException e) {
+			e.printStackTrace();
+		}
 		
 	}
 	

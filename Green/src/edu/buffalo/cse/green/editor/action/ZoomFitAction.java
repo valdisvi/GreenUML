@@ -11,6 +11,7 @@
 package edu.buffalo.cse.green.editor.action;
 
 import java.util.List;
+import java.util.Random;
 
 import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.geometry.Dimension;
@@ -99,7 +100,7 @@ public class ZoomFitAction extends ContextAction {
 		}
 		return zoomLevels;
 	}
-	
+		
 	/**
 	 * Looks at what is currently drawn in the viewer and calculates the zoomOut
 	 * scale that needs to be applied to fit all the layout in the viewer. For
