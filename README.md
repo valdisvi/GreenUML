@@ -1,5 +1,6 @@
 
-### Green UML release 4.6.0
+
+### Green UML release 4.7.0
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Users guide and additional information](#users-guide-and-additional-information)
@@ -27,7 +28,7 @@ Green supports exporting files to JPG, PNG and GIF formats, as well as saving th
 - Added logger and an option to write output to file (accesible in Preferences)
 
 ## Requirements
-Eclipse 4.6 Neon
+Eclipse 4.7 Oxygen
 
 ## Installation
 
@@ -38,6 +39,15 @@ Eclipse 4.6 Neon
      Location: http://odo.lv/ftp/tools/GreenUpdateSite
 - Click OK 
 - Choose what features to install and follow further instructions
+
+### Update Site Setup
+To create an update site download the **GreenUpdateSite** folder, store it on your computer or server and then install it by using the path or link to the folder.
+
+It also can be done directly via `svn checkout`
+
+ - Install subversion `sudo apt install subversion` 	
+ - Download the folder from the repository `svn checkout
+   https://github.com/Discobrick/GreenUML-WRK/trunk/GreenUpdateSite`
 
 ## Users guide and additional information
 - [Using the Green UML Plugin for Eclipse](https://www.clear.rice.edu/comp310/Eclipse/GreenUML/)
@@ -54,7 +64,8 @@ Please note that Green UML is effectively a collection of plug-ins (see [the str
 - [GMF Tooling](http://download.eclipse.org/modeling/gmp/gmf-tooling/updates/releases/)
 
 ### What can be improved:
-- Green UML is working only on Eclipse 4.6 Neon now, further development could target other Eclipse versions
+- Better Auto layout algorithm
+- Better dark mode implementation
 - Additional functionality
 
 ## Bugs
