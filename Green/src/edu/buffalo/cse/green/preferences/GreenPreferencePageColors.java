@@ -103,24 +103,19 @@ implements IWorkbenchPreferencePage {
 		for (DiagramEditor editor : DiagramEditor.getEditors()) {
 			if (aaa.getBooleanValue() == true) {
 		        
-                store.setValue(PreferenceInitializer.P_COLOR_NOTE, "255,255,0"); 					// ?
+                store.setValue(PreferenceInitializer.P_COLOR_NOTE, "155,155,155"); 					// ?
                 store.setValue(PreferenceInitializer.P_COLOR_UML, "100,100,100"); 					// fill
                 store.setValue(PreferenceInitializer.P_COLOR_SELECTED, "16,152,61"); 				// highlight color
                 store.setValue(PreferenceInitializer.P_COLOR_TYPE_BORDER, "0,0,0"); 				// borders
                 store.setValue(PreferenceInitializer.P_COLOR_TYPE_BORDER_HIDDENR, "255,255,255"); 	// ?
                 store.setValue(PreferenceInitializer.P_COLOR_COMPARTMENT_BORDER, "0,0,0"); 			// compartment border
                 store.setValue(PreferenceInitializer.P_COLOR_TYPE_TEXT, "255,255,255"); 			// text color
-                store.setValue(PreferenceInitializer.P_COLOR_NOTE_BORDER, "0,0,0");        			// ?
-                store.setValue(PreferenceInitializer.P_COLOR_NOTE_TEXT, "0,0,0"); 					// ?
+                store.setValue(PreferenceInitializer.P_COLOR_NOTE_BORDER, "155,155,155");        			// ?
+                store.setValue(PreferenceInitializer.P_COLOR_NOTE_TEXT, "255,255,255"); 					// ?
                 store.setValue(PreferenceInitializer.P_COLOR_REL_ARROW_FILL, "255,255,255"); 		// color of the tip of the arrow
                 store.setValue(PreferenceInitializer.P_COLOR_REL_LINE, "0,0,0"); 					// arrow color
                 store.setValue(PreferenceInitializer.P_COLOR_REL_TEXT, "0,0,0"); 					// color of the text by the arrows
-	                
-                
-                Palette bbb = new Palette();
-                int[] colors = {100, 100, 100};
-                bbb.setBackgroundPaletteIndex(100);
-                
+	        
 			}
 			editor.refresh();
 			
