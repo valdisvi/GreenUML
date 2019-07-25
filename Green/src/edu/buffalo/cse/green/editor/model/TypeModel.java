@@ -87,6 +87,9 @@ public class TypeModel extends MemberModel<CompartmentModel, RootModel, IType> {
 
 	private CompartmentModel _methodCompartment;
 	
+	private int level;
+	
+	private int positionNumber;
 	
 	//Visibility of individual compartments was an unsuccessful attempt
 	//at showing portions of the diagram.  Zero-sized compartments
@@ -112,6 +115,8 @@ public class TypeModel extends MemberModel<CompartmentModel, RootModel, IType> {
 		_nameCompartment = CompartmentModel.newTypeCompartment();
 		setLocation(new Point(DEFAULT_X_LOCATION, DEFAULT_Y_LOCATION));
 		setSize(new Dimension(-1, -1));
+		level = 0;
+		positionNumber = 0;
 
 		// add the box for the name
 		addChild(_nameCompartment);
@@ -132,73 +137,25 @@ public class TypeModel extends MemberModel<CompartmentModel, RootModel, IType> {
 			}
 		}
 	}
-
-//	/**
-//	 * Sets the visibility of individual compartments
-//	 * 
-//	 * @param field true to show fields
-//	 * @param method true to show methods
-//	 */
-//	public void setCompartmentVisibility(boolean field, boolean method) {
-////		_fieldsAreVisible = field;
-////		_methodsAreVisible = method;
-//		if(_fieldCompartment != null) {
-////			SetConstraintCommand command = new SetConstraintCommand(_fieldCompartment);
-//			if(field) {
-//				System.out.println("=================================================");
-//				System.out.println("Size: " + _fieldCompartment.getSize());
-//				System.out.println("Bounds:" + _fieldCompartment.getBounds());
-//				System.out.println("Drawn Size: " + _fieldCompartment.getDrawnSize());
-//				_fieldCompartment.setSize(new Dimension(0, 0));
-//				this.forceRefesh();
-////				this.setSize(width, height)
-////				this.
-////				_fieldCompartment.setVisible(true);
-////				_fieldCompartment.setDrawnSize(new Dimension(0, 0));
-//				CompartmentPart p = (CompartmentPart) DiagramEditor.getActiveEditor().getRootPart().getPartFromModel(_fieldCompartment);
-//				p.getFigure().setSize(new Dimension(0, 0));
-//				
-//				
-////				_fieldCompartment.removeChildren();
-//				System.out.println("-------------------------------------------------");
-//				System.out.println("Size: " + _fieldCompartment.getSize());
-//				System.out.println("Bounds:" + _fieldCompartment.getBounds());
-//				System.out.println("Drawn Size: " + _fieldCompartment.getDrawnSize());
-//				_fieldCompartment.refresh();
-////				_fieldCompartment.firePropertyChange(Size, _fieldCompartment.getSize(), new Dimension( -1, -1));
-////				updateFields();
-////				command.setBounds(new Rectangle(_fieldCompartment.getLocation(), new Dimension(-1, -1)));
-//				this.refresh();
-//			}
-//			else {
-//				_fieldCompartment.setVisible(false);
-////				_fieldCompartment.setDrawnSize(new Dimension(0, 0));
-////				_fieldCompartment.se
-//				_fieldCompartment.setSize(new Dimension(0, 0));
-////				_fieldCompartment.firePropertyChange(Size, _fieldCompartment.getSize(), new Dimension( 0, 0));
-////				updateFields();
-////				command.setBounds(new Rectangle(_fieldCompartment.getLocation(), new Dimension(0, 0)));
-//				this.refresh();
-//			}
-////			DiagramEditor.getActiveEditor().execute(command);
-//				
-//		}
-//		if(_methodCompartment != null) {
-//			SetConstraintCommand command = new SetConstraintCommand(_methodCompartment);
-//			if(method) {
-////				_methodCompartment.setSize(new Dimension(-1, -1));
-//				_methodCompartment.setVisible(true);
-////				command.setBounds(new Rectangle(_methodCompartment.getLocation(), new Dimension(-1, -1)));
-//			}
-//			else {
-////				_methodCompartment.setSize(new Dimension(0, 0));
-//				_methodCompartment.setVisible(false);
-////				command.setBounds(new Rectangle(_methodCompartment.getLocation(), new Dimension(0, 0)));
-//			}
-////			DiagramEditor.getActiveEditor().execute(command);
-//		}
-//	}
 	
+
+	
+	public int getLevel() {
+		return level;
+	}
+
+	public void setLevel(int level) {
+		this.level = level;
+	}
+
+	public int getPositionNumber() {
+		return positionNumber;
+	}
+
+	public void setPositionNumber(int positionNumber) {
+		this.positionNumber = positionNumber;
+	}
+
 	/**
 	 * Adds a <code>CompartmentModel</code> child.
 	 * 
