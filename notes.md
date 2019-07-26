@@ -6,7 +6,6 @@ This file documents all changes made from GreenUML version 4.6.0 to 4.7.0. It de
 For future contributers, the project has very little comments and method descriptions. The lack of information makes the understanding of the already developed code realy hard and time consuming. We encourage future developers of this project to document every method and/or variable to help others after you to work fast and efficiently. We ourselves did not add comments for code that already existed. but we have documented our work.
 
 
-
 ### New AutoLayout option
 
 A new layout option has been added. This layout is suited for tree-like structures (for example, showing child classes of a superclass). For more complex diagrams, the old AutoLayout option is preferred, but this new option can make simpler diagrams more comprehensible.
@@ -19,6 +18,11 @@ This method works by finding all classes that are not subclasses of another clas
 Models are sorted on the y axis by level (depth). Two more methods have been added for this purpose- one to find the maximum level across all models in the diagram, and one to find the relative level of an individual model. The difference between the maximum and individual level is the depth at which the model is placed at, with level 0 being the top.
 
 In the future, this method could be improved by making the parent classes centered relative to their subclasses.
+
+
+### Import, interface and package inclusion
+
+The layout takes in account only classes, leaving out interfaces and imports from other packages. So the algorithm only orders classes. When an Interface is provided for ordering it shows unsuspected results. When we try to create a layout for whole project it shows an error, that it cannot do it. This project needs a way to see all imported packages and how they relate to each other in one layout
 
 
 ### Adaptive zoom
