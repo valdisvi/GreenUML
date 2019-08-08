@@ -11,8 +11,6 @@
 - [License information](#license-information)
 - [Origins, historical versions](#origins-historical-versions)
 
-====================================================================================================================
-
 Green is a LIVE round-tripping editor, meaning that it supports both software engineering and reverse engineering. 
 You can use green to create a UML class diagram from code, or to generate code by drawing a class diagram.
 
@@ -44,12 +42,11 @@ To create an update site download the **GreenUpdateSite** folder, store it on yo
 
 It also can be done directly via `svn checkout`
 
- - Install subversion `sudo apt install subversion` 	
- - Download the folder from the repository `svn checkout
-   https://github.com/Discobrick/GreenUML-WRK/trunk/GreenUpdateSite`
+ - Install subversion `sudo apt install subversion`
+ - Download the folder from the repository `svn checkout https://github.com/valdisvi/GreenUML/trunk/GreenUpdateSite`
 
-## Users guide and additional information
-- [Using the Green UML Plugin for Eclipse](https://www.clear.rice.edu/comp310/Eclipse/GreenUML/)
+## User guide and additional information
+- [Using the Green UML Plugin for Eclipse](UserGuide.md)
 - In Eclipse, click Help > Help Contents > Green Users Guide
 
 
